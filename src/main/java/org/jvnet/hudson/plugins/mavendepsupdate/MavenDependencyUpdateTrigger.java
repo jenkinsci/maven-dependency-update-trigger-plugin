@@ -199,55 +199,43 @@ public class MavenDependencyUpdateTrigger
         }
         catch ( PlexusContainerException e )
         {
-            e.printStackTrace();
-            LOGGER.warning( e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( ComponentLookupException e )
         {
-            e.printStackTrace();
-            LOGGER.warning( e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( MavenExecutionRequestPopulationException e )
         {
-            e.printStackTrace();
-            LOGGER.warning( e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( SettingsBuildingException e )
         {
-            e.printStackTrace();
-            LOGGER.warning( e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( ProjectBuildingException e )
         {
-            System.out.println("cause");
-            e.getCause().printStackTrace();
-            System.out.println("exception");
-            e.printStackTrace();
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( DependencyResolutionException e )
         {
-            e.printStackTrace();
-            LOGGER.warning( e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( InvalidRepositoryException e )
         {
-            e.printStackTrace();
-            LOGGER.warning( e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( CycleDetectedException e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( DuplicateProjectException e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.warning("ignore " + e.getMessage() );
         } 
         catch ( Exception e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.warning("ignore " + e.getMessage() );
         }        
         finally
         {
@@ -462,24 +450,23 @@ public class MavenDependencyUpdateTrigger
         }
         catch ( SecurityException e )
         {
-            LOGGER.fine(  e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( NoSuchMethodException e )
         {
-            LOGGER.fine(  e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( IllegalArgumentException e )
         {
-            LOGGER.fine(  e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( IllegalAccessException e )
         {
-            LOGGER.fine(  e.getMessage() );
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         catch ( InvocationTargetException e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.warning("ignore " + e.getMessage() );
         }
         
         return false;

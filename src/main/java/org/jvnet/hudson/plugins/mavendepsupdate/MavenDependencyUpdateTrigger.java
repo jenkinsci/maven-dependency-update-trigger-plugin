@@ -108,6 +108,7 @@ public class MavenDependencyUpdateTrigger
     @Override
     public void run()
     {
+        
 
         PluginWrapper pluginWrapper = Hudson.getInstance().getPluginManager().getPlugin( "maven-dependency-update-trigger" );
         PluginFirstClassLoader pluginFirstClassLoader = (PluginFirstClassLoader) pluginWrapper.classLoader;
@@ -123,12 +124,10 @@ public class MavenDependencyUpdateTrigger
             Thread.currentThread().setContextClassLoader( plexusContainer.getContainerRealm() );
             LOGGER.info( " in run " + this.job.getRootDir().getAbsolutePath() );
             
-            // FIXME projectBuilder doesn't load snapshots ???
             ProjectBuilder projectBuilder = plexusContainer.lookup( ProjectBuilder.class );
             
             // FIXME load userProperties from the job
             Properties userProperties = new Properties();
-
             
             projectBuildingRequest = getProjectBuildingRequest( userProperties, plexusContainer );
                         
@@ -244,7 +243,14 @@ public class MavenDependencyUpdateTrigger
         }
     }
     
-    PlexusContainer getPlexusContainer(PluginFirstClassLoader pluginFirstClassLoader) throws PlexusContainerException {
+    /**
+     * FIXME move this to a common library : maven3-utils or tools
+     * will build a PlexusContainer from {@link PluginFirstClassLoader}
+     * @param pluginFirstClassLoader
+     * @return
+     * @throws PlexusContainerException
+     */
+    private PlexusContainer getPlexusContainer(PluginFirstClassLoader pluginFirstClassLoader) throws PlexusContainerException {
         DefaultContainerConfiguration conf = new DefaultContainerConfiguration();
         ClassWorld world = new ClassWorld();
         ClassRealm classRealm = new ClassRealm( world, "project-building", pluginFirstClassLoader );
@@ -302,11 +308,7 @@ public class MavenDependencyUpdateTrigger
         }
 
         MavenRepositorySystemSession session = new MavenRepositorySystemSession();
-        
-        //if (session.getLocalRepositoryManager() == null)
-        //{
-        //    session.setLocalRepositoryManager( new EnhancedLocalRepositoryManager( new File(localRepoPath) ) );
-        //}
+
         SnapshotTransfertListener snapshotTransfertListener = new SnapshotTransfertListener();
         session.setTransferListener( snapshotTransfertListener );
         

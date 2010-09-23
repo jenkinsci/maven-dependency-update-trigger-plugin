@@ -21,6 +21,13 @@
     <aetherVersion>1.5</aetherVersion>
     <sisuInjectVersion>1.4.1</sisuInjectVersion>
   </properties>
+  
+  <developers>
+    <developer>
+      <id>olamy</id>
+      <email>olamy@apache.org</email>
+    </developer>
+  </developers>
 
   <dependencies>
          

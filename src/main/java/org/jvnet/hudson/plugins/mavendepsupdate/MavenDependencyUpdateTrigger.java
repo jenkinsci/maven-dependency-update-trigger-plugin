@@ -12,7 +12,6 @@ import hudson.model.Item;
 import hudson.scheduler.CronTabList;
 import hudson.tasks.Builder;
 import hudson.tasks.Maven;
-import hudson.triggers.TimerTrigger.TimerTriggerCause;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
@@ -41,6 +40,8 @@ import org.apache.maven.execution.DefaultMavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionRequestPopulationException;
 import org.apache.maven.execution.MavenExecutionRequestPopulator;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.plugin.MavenPluginManager;
 import org.apache.maven.project.DefaultDependencyResolutionRequest;
 import org.apache.maven.project.DependencyResolutionException;
 import org.apache.maven.project.DependencyResolutionResult;
@@ -131,6 +132,12 @@ public class MavenDependencyUpdateTrigger
             
             projectBuildingRequest = getProjectBuildingRequest( userProperties, plexusContainer );
                         
+            // check plugins too
+            projectBuildingRequest.setProcessPlugins( true );
+            // force snapshots update
+            projectBuildingRequest.setForceUpdate( true );
+            projectBuildingRequest.setResolveDependencies( true );
+            
             List<ProjectBuildingResult> projectBuildingResults = projectBuilder
                 .build( Arrays.asList( new File( this.job.getRootDir(), "workspace/trunk/pom.xml" ) ), true,
                         projectBuildingRequest);
@@ -161,7 +168,9 @@ public class MavenDependencyUpdateTrigger
             mavenRepositorySystemSession.setWorkspaceReader( ChainedWorkspaceReader
                 .newInstance( reactorRepository, projectBuildingRequest.getRepositorySession().getWorkspaceReader() ) );
 
-            projectBuildingRequest.setForceUpdate( true );
+            
+            MavenPluginManager mavenPluginManager = plexusContainer.lookup( MavenPluginManager.class );
+            
             for ( MavenProject mavenProject : projectSorter.getSortedProjects() )
             {
                 LOGGER.info( "resolve dependencies for project " + mavenProject.getId() );
@@ -171,6 +180,19 @@ public class MavenDependencyUpdateTrigger
 
                 DependencyResolutionResult dependencyResolutionResult = projectDependenciesResolver
                     .resolve( dependencyResolutionRequest );
+                
+                // FIXME optionnal ?
+                // check plugin updates too
+                for ( Plugin plugin : mavenProject.getBuildPlugins() )
+                {
+                    // only for SNAPSHOT
+                    if (StringUtils.endsWith( plugin.getVersion(), "SNAPSHOT" ))
+                    {
+                        mavenPluginManager.getPluginDescriptor( plugin, mavenProject.getRemotePluginRepositories(),
+                                                            mavenRepositorySystemSession );
+                    }
+                }
+                    
 
             }
 
@@ -235,9 +257,10 @@ public class MavenDependencyUpdateTrigger
         {
             SnapshotTransfertListener snapshotTransfertListener = (SnapshotTransfertListener) projectBuildingRequest
                 .getRepositorySession().getTransferListener();
-            LOGGER.info( "result here snapshotDownloaded : " + snapshotTransfertListener.snapshotDownloaded );    
+               
             if (snapshotTransfertListener.snapshotDownloaded)
             {
+                LOGGER.info( "snapshotDownloaded so triggering a new build" ); 
                 job.scheduleBuild(0, new MavenDependencyUpdateTriggerCause());
             }
         }

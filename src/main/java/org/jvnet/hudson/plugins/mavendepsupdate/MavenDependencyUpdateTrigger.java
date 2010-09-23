@@ -437,13 +437,13 @@ public class MavenDependencyUpdateTrigger
 
         public String getDisplayName()
         {
-            return "m2 deps update";
+            return Messages.plugin_title();
         }
 
         @Override
         public String getHelpFile()
         {
-            return "/help/project-config/timer.html";
+            return "/plugin/maven-dependency-update-trigger/help.html";
         }
 
         /**

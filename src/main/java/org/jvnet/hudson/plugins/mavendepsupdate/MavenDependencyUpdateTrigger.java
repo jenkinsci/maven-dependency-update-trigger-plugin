@@ -42,7 +42,10 @@ import hudson.util.FormValidation;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,6 +87,7 @@ import org.apache.maven.settings.building.SettingsBuilder;
 import org.apache.maven.settings.building.SettingsBuildingException;
 import org.apache.maven.settings.building.SettingsBuildingRequest;
 import org.apache.maven.settings.building.SettingsBuildingResult;
+import org.apache.tools.ant.AntClassLoader;
 import org.codehaus.plexus.DefaultContainerConfiguration;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
@@ -123,67 +127,79 @@ public class MavenDependencyUpdateTrigger
     public static final File DEFAULT_GLOBAL_SETTINGS_FILE =
         new File( System.getProperty( "maven.home", System.getProperty( "user.dir", "" ) ), "conf/settings.xml" );
     
+    private final boolean checkPlugins;
+    
     @DataBoundConstructor
-    public MavenDependencyUpdateTrigger( String cron_value )
+    public MavenDependencyUpdateTrigger( String cron_value, boolean checkPlugins )
         throws ANTLRException
     {
         super( cron_value );
+        this.checkPlugins = checkPlugins;
     }
 
     @Override
     public void run()
     {
-        
-
-        PluginWrapper pluginWrapper = Hudson.getInstance().getPluginManager().getPlugin( "maven-dependency-update-trigger" );
-        PluginFirstClassLoader pluginFirstClassLoader = (PluginFirstClassLoader) pluginWrapper.classLoader;
-        
         ProjectBuildingRequest projectBuildingRequest = null;
 
-        // job.scheduleBuild(0, new TimerTriggerCause());
         ClassLoader origClassLoader = Thread.currentThread().getContextClassLoader();
         try
         {
-            PlexusContainer plexusContainer = getPlexusContainer( pluginFirstClassLoader );
+            PlexusContainer plexusContainer = null;
+            PluginWrapper pluginWrapper = Hudson.getInstance().getPluginManager()
+                .getPlugin( "maven-dependency-update-trigger" );
 
+            // olamy here hacking for be able to use hpi:run
+            // FIXME doesn't work currently some hacking to do in hpi plugin too.
+            if ( pluginWrapper.classLoader instanceof PluginFirstClassLoader )
+            {
+                PluginFirstClassLoader pluginFirstClassLoader = (PluginFirstClassLoader) pluginWrapper.classLoader;
+
+                plexusContainer = getPlexusContainer( pluginFirstClassLoader );
+            }
+            else
+            {
+                plexusContainer = getPlexusContainer( (URLClassLoader) pluginWrapper.classLoader );
+
+            }
             Thread.currentThread().setContextClassLoader( plexusContainer.getContainerRealm() );
             LOGGER.info( " in run " + this.job.getRootDir().getAbsolutePath() );
-            
+
             ProjectBuilder projectBuilder = plexusContainer.lookup( ProjectBuilder.class );
-            
+
             // FIXME load userProperties from the job
             Properties userProperties = new Properties();
-            
+
             projectBuildingRequest = getProjectBuildingRequest( userProperties, plexusContainer );
-                        
+
             // check plugins too
             projectBuildingRequest.setProcessPlugins( true );
             // force snapshots update
             projectBuildingRequest.setForceUpdate( true );
             projectBuildingRequest.setResolveDependencies( true );
-            
-            List<ProjectBuildingResult> projectBuildingResults = projectBuilder
-                .build( Arrays.asList( new File( this.job.getRootDir(), "workspace/trunk/pom.xml" ) ), true,
-                        projectBuildingRequest);
 
-           
-            ProjectDependenciesResolver projectDependenciesResolver = plexusContainer.lookup( ProjectDependenciesResolver.class );
-            
-            List<MavenProject> mavenProjects = new ArrayList<MavenProject>(projectBuildingResults.size());
-            
-            for (ProjectBuildingResult projectBuildingResult : projectBuildingResults )
+            List<ProjectBuildingResult> projectBuildingResults = projectBuilder.build( Arrays
+                .asList( new File( this.job.getRootDir(), "workspace/trunk/pom.xml" ) ), true, projectBuildingRequest );
+
+            ProjectDependenciesResolver projectDependenciesResolver = plexusContainer
+                .lookup( ProjectDependenciesResolver.class );
+
+            List<MavenProject> mavenProjects = new ArrayList<MavenProject>( projectBuildingResults.size() );
+
+            for ( ProjectBuildingResult projectBuildingResult : projectBuildingResults )
             {
                 mavenProjects.add( projectBuildingResult.getProject() );
             }
-            
+
             ProjectSorter projectSorter = new ProjectSorter( mavenProjects );
-                       
+
             // use the projects reactor model as a workspaceReader
             // if reactors are not available remotely dependencies resolve will failed
             // due to artifact not found
-            
+
             final Map<String, MavenProject> projectMap = getProjectMap( mavenProjects );
-            WorkspaceReader reactorRepository = new ReactorReader( projectMap,  new File( this.job.getRootDir(), "workspace/trunk" ) );
+            WorkspaceReader reactorRepository = new ReactorReader( projectMap, new File( this.job.getRootDir(),
+                                                                                         "workspace/trunk" ) );
 
             MavenRepositorySystemSession mavenRepositorySystemSession = (MavenRepositorySystemSession) projectBuildingRequest
                 .getRepositorySession();
@@ -192,9 +208,8 @@ public class MavenDependencyUpdateTrigger
             mavenRepositorySystemSession.setWorkspaceReader( ChainedWorkspaceReader
                 .newInstance( reactorRepository, projectBuildingRequest.getRepositorySession().getWorkspaceReader() ) );
 
-            
             MavenPluginManager mavenPluginManager = plexusContainer.lookup( MavenPluginManager.class );
-            
+
             for ( MavenProject mavenProject : projectSorter.getSortedProjects() )
             {
                 LOGGER.info( "resolve dependencies for project " + mavenProject.getId() );
@@ -204,76 +219,76 @@ public class MavenDependencyUpdateTrigger
 
                 DependencyResolutionResult dependencyResolutionResult = projectDependenciesResolver
                     .resolve( dependencyResolutionRequest );
-                
-                // FIXME optionnal ?
-                // check plugin updates too
-                for ( Plugin plugin : mavenProject.getBuildPlugins() )
+
+                if ( checkPlugins )
                 {
-                    // only for SNAPSHOT
-                    if (StringUtils.endsWith( plugin.getVersion(), "SNAPSHOT" ))
+                    for ( Plugin plugin : mavenProject.getBuildPlugins() )
                     {
-                        mavenPluginManager.getPluginDescriptor( plugin, mavenProject.getRemotePluginRepositories(),
-                                                            mavenRepositorySystemSession );
+                        // only for SNAPSHOT
+                        if ( StringUtils.endsWith( plugin.getVersion(), "SNAPSHOT" ) )
+                        {
+                            mavenPluginManager.getPluginDescriptor( plugin, mavenProject.getRemotePluginRepositories(),
+                                                                    mavenRepositorySystemSession );
+                        }
                     }
                 }
-                    
 
             }
 
         }
         catch ( PlexusContainerException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( ComponentLookupException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( MavenExecutionRequestPopulationException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( SettingsBuildingException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( ProjectBuildingException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( DependencyResolutionException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( InvalidRepositoryException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( CycleDetectedException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( DuplicateProjectException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
-        } 
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
         catch ( Exception e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
-        }        
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
         finally
         {
             Thread.currentThread().setContextClassLoader( origClassLoader );
         }
-        if (projectBuildingRequest != null)
+        if ( projectBuildingRequest != null )
         {
             SnapshotTransfertListener snapshotTransfertListener = (SnapshotTransfertListener) projectBuildingRequest
                 .getRepositorySession().getTransferListener();
-               
-            if (snapshotTransfertListener.snapshotDownloaded)
+
+            if ( snapshotTransfertListener.snapshotDownloaded )
             {
-                LOGGER.info( "snapshotDownloaded so triggering a new build" ); 
-                job.scheduleBuild(0, new MavenDependencyUpdateTriggerCause());
+                LOGGER.info( "snapshotDownloaded so triggering a new build" );
+                job.scheduleBuild( 0, new MavenDependencyUpdateTriggerCause() );
             }
         }
     }
@@ -300,6 +315,31 @@ public class MavenDependencyUpdateTrigger
         return new DefaultPlexusContainer( conf );
     }
     
+    /**
+     * simple hack to make hpi:run working 
+     * @param urlClassLoader
+     * @return
+     * @throws PlexusContainerException
+     * @throws MalformedURLException
+     * @throws URISyntaxException
+     */
+    private PlexusContainer getPlexusContainer(URLClassLoader urlClassLoader) throws PlexusContainerException, MalformedURLException, URISyntaxException {
+        // here building a parent first
+        AntClassLoader antClassLoader = new AntClassLoader( Thread.currentThread().getContextClassLoader(), false );
+        for ( URL url : urlClassLoader.getURLs() )
+        {
+            File f = new File( url.toURI().toURL().getFile() );
+            LOGGER.info( f.getPath() );
+            antClassLoader.addPathComponent( f );
+        }
+        Thread.currentThread().setContextClassLoader( antClassLoader );
+        DefaultContainerConfiguration conf = new DefaultContainerConfiguration();
+        ClassWorld world = new ClassWorld();
+        ClassRealm classRealm = new ClassRealm( world, "project-building", antClassLoader );
+        conf.setRealm( classRealm );
+
+        return new DefaultPlexusContainer( conf );
+    }    
 
     
     ProjectBuildingRequest getProjectBuildingRequest( Properties userProperties, PlexusContainer plexusContainer )

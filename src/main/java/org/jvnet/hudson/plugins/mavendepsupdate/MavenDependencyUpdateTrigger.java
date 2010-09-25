@@ -175,7 +175,7 @@ public class MavenDependencyUpdateTrigger
             // check plugins too
             projectBuildingRequest.setProcessPlugins( true );
             // force snapshots update
-            projectBuildingRequest.setForceUpdate( true );
+
             projectBuildingRequest.setResolveDependencies( true );
 
             List<ProjectBuildingResult> projectBuildingResults = projectBuilder.build( Arrays
@@ -383,6 +383,8 @@ public class MavenDependencyUpdateTrigger
         }
 
         MavenRepositorySystemSession session = new MavenRepositorySystemSession();
+        
+        session.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
 
         SnapshotTransfertListener snapshotTransfertListener = new SnapshotTransfertListener();
         session.setTransferListener( snapshotTransfertListener );

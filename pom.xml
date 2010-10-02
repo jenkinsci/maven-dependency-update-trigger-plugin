@@ -9,7 +9,7 @@
 
   <groupId>org.jvnet.hudson.plugins</groupId>
   <artifactId>maven-dependency-update-trigger</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>hpi</packaging>
   <url>http://wiki.hudson-ci.org//x/jgfDAg</url>
 
@@ -314,4 +314,10 @@
     </profile>   
   </profiles>
   
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/maven-dependency-update-trigger-1.0</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/maven-dependency-update-trigger-1.0</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/tags/maven-dependency-update-trigger-1.0</url>
+  </scm>
 </project>

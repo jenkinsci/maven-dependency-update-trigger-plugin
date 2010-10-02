@@ -11,7 +11,7 @@
   <artifactId>maven-dependency-update-trigger</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
-  <url>http://wiki.hudson-ci.org/display/HUDSON/Maven+Dependency+Update+trigger</url>
+  <url>http://wiki.hudson-ci.org//x/jgfDAg</url>
 
   <properties>
     <hudsonCoreVersion>1.379</hudsonCoreVersion>

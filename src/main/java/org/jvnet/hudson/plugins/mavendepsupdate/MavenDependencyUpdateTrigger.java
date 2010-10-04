@@ -28,6 +28,8 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
 import hudson.PluginWrapper;
+import hudson.Util;
+import hudson.maven.MavenModule;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.TopLevelItem;
@@ -36,7 +38,7 @@ import hudson.model.Cause;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
 import hudson.model.Node;
-import hudson.model.Run;
+import hudson.remoting.VirtualChannel;
 import hudson.scheduler.CronTabList;
 import hudson.tasks.Builder;
 import hudson.tasks.Maven;
@@ -44,7 +46,9 @@ import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -53,6 +57,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
@@ -119,9 +124,9 @@ public class MavenDependencyUpdateTrigger
 
             FilePath moduleRoot = abstractProject.getScm().getModuleRoot( workspace );
 
-            Run run = abstractProject.getLastBuild();
-            //FIXME check -f from cli or rootPOM from MavenModuleSet
-            String rootPomPath = moduleRoot.getRemote() + "/pom.xml";
+
+            
+            String rootPomPath = moduleRoot.getRemote() + "/" + getRootPomPath();
 
             String localRepoPath = getLocalRepo( workspace ).toString();
 
@@ -133,12 +138,19 @@ public class MavenDependencyUpdateTrigger
             {
                 checker.setClassLoaderParent( (PluginFirstClassLoader) pluginWrapper.classLoader );
             }
-            checker.setAlternateSettings( getAlternateSettings() );
-            checker.setGlobalSettings( getGlobalSettings() );
+            
+            VirtualChannel virtualChannel = node.getChannel();
+            FilePath alternateSettings = getAlternateSettings(virtualChannel);
+            checker.setAlternateSettings( alternateSettings );
+            
+            FilePath globalSettings = getGlobalSettings(virtualChannel);
+            checker.setGlobalSettings( globalSettings );
 
+            checker.setUserProperties( getUserProperties() );
+            
             LOGGER.info( "run MavenUpdateChecker on node " + node.getDisplayName() );
 
-            MavenUpdateCheckerResult mavenUpdateCheckerResult = node.getChannel().call( checker );
+            MavenUpdateCheckerResult mavenUpdateCheckerResult = virtualChannel.call( checker );
 
             LOGGER.info( "run MavenUpdateChecker on node " + node.getDisplayName() + " done " );
 
@@ -313,24 +325,180 @@ public class MavenDependencyUpdateTrigger
     }
     
     //FIXME !!
-    private FilePath getAlternateSettings()
+    private FilePath getAlternateSettings(VirtualChannel virtualChannel)
     {
         //-s,--settings or from configuration for maven native project
+        // check if FreeStyleProject
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            for ( Builder b : fp.getBuilders() )
+            {
+                if ( b instanceof Maven )
+                {
+                    String targets = ( (Maven) b ).getTargets();
+                    String[] args = Util.tokenize( targets );
+                    if ( args == null )
+                    {
+                        return null;
+                    }
+                    for ( int i = 0, size = args.length; i < size; i++ )
+                    {
+                        if (StringUtils.equals( "-s", args[i] ) || StringUtils.equals( "--settings", args[i] ))
+                        {
+                            return new FilePath( virtualChannel, args[i+1]);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // check if there is a method called getAlternateSettings
+        try
+        {
+            Method method = this.job.getClass().getMethod( "getAlternateSettings", null );
+            String rootPom = (String) method.invoke( this.job, null );
+            return rootPom != null ? new FilePath( virtualChannel, rootPom ) : null;
+        }
+        catch ( SecurityException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( NoSuchMethodException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( IllegalAccessException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( InvocationTargetException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        } 
+        
+        
+        
         return null;
     }
     
     //FIXME !!
-    private FilePath getGlobalSettings()
+    private FilePath getGlobalSettings(VirtualChannel virtualChannel)
     {
         //-gs,--global-settings
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            for ( Builder b : fp.getBuilders() )
+            {
+                if ( b instanceof Maven )
+                {
+                    String targets = ( (Maven) b ).getTargets();
+                    String[] args = Util.tokenize( targets );
+                    if ( args == null )
+                    {
+                        return null;
+                    }
+                    for ( int i = 0, size = args.length; i < size; i++ )
+                    {
+                        if (StringUtils.equals( "-gs", args[i] ) || StringUtils.equals( "--global-settings", args[i] ))
+                        {
+                            return new FilePath( virtualChannel, args[i+1]);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
         return null;
     }
     
-    // FIXME !!
-    private Properties getUserProperties()
+    private Properties getUserProperties() throws IOException
     {
-        // use -D from cli and 
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            for ( Builder b : fp.getBuilders() )
+            {
+                if ( b instanceof Maven )
+                {
+                    String properties = ( (Maven) b ).properties;
+                    return load( properties );
+                }
+            }
+        }
         return new Properties();
+    }
+    
+    private Properties load(String properties) throws IOException {
+        Properties p = new Properties();
+        p.load(new ByteArrayInputStream(properties.getBytes()));
+        return p;
+    }
+    
+    //FIXME check -f from cli
+    private String getRootPomPath()
+    {
+        
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            for ( Builder b : fp.getBuilders() )
+            {
+                if ( b instanceof Maven )
+                {
+                    String targets = ( (Maven) b ).getTargets();
+                    String[] args = Util.tokenize( targets );
+                    if ( args == null )
+                    {
+                        return null;
+                    }
+                    for ( int i = 0, size = args.length; i < size; i++ )
+                    {
+                        if (StringUtils.equals( "-f", args[i] ) )
+                        {
+                            return args[i+1];
+                        }
+                    }
+                }
+            }
+            return null;
+        }        
+        
+        // check if there is a method called getRootPOM
+        try
+        {
+            Method method = this.job.getClass().getMethod( "getRootPOM", null );
+            String rootPom = (String) method.invoke( this.job, null );
+            return rootPom;
+        }
+        catch ( SecurityException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( NoSuchMethodException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( IllegalAccessException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( InvocationTargetException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }        
+        
+        return "pom.xml";
     }
 
 }

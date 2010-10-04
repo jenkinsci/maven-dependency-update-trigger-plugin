@@ -75,7 +75,6 @@ import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.jvnet.hudson.plugins.mavendepsupdate.MavenDependencyUpdateTrigger.MavenDependencyUpdateTriggerCause;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.Maven3Utils;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.ReactorReader;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.SnapshotTransfertListener;
@@ -101,18 +100,18 @@ public class MavenUpdateChecker
     private final String localRepoPath;
 
     private final boolean checkPlugins;
-    
+
     private final String projectWorkspace;
-    
+
     private final boolean masterRun;
-    
+
     // use for master run
     private PluginFirstClassLoader classLoaderParent;
 
     private MavenUpdateCheckerResult mavenUpdateCheckerResult = new MavenUpdateCheckerResult();
 
     public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
-                               boolean checkPlugins, String projectWorkspace,  boolean masterRun  )
+                               boolean checkPlugins, String projectWorkspace, boolean masterRun )
     {
         this.mavenShadedJarPath = mavenShadedJarPath;
         this.rootPomPath = rootPomPath;
@@ -243,7 +242,7 @@ public class MavenUpdateChecker
     private PlexusContainer getPlexusContainer( PluginFirstClassLoader pluginFirstClassLoader )
         throws MalformedURLException, IOException, InterruptedException, PlexusContainerException
     {
-        if (this.masterRun)
+        if ( this.masterRun )
         {
             return Maven3Utils.getPlexusContainer( this.classLoaderParent );
         }
@@ -265,7 +264,8 @@ public class MavenUpdateChecker
         throws MalformedURLException, IOException, InterruptedException
     {
         PluginFirstClassLoader pluginFirstClassLoader = new PluginFirstClassLoader();
-        pluginFirstClassLoader.setParent( this.masterRun ? this.classLoaderParent : Thread.currentThread().getContextClassLoader() );
+        pluginFirstClassLoader.setParent( this.masterRun ? this.classLoaderParent : Thread.currentThread()
+            .getContextClassLoader() );
         // parent first as hudson classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
         String mavenShadedJarPathStr = mavenShadedJarPath.toURI().toURL().getFile();
@@ -296,8 +296,11 @@ public class MavenUpdateChecker
 
         SettingsBuildingRequest settingsRequest = new DefaultSettingsBuildingRequest();
         // FIXME find from job configuration
-        settingsRequest.setGlobalSettingsFile( MavenDependencyUpdateTrigger.DEFAULT_GLOBAL_SETTINGS_FILE );
-        settingsRequest.setUserSettingsFile( MavenDependencyUpdateTrigger.DEFAULT_USER_SETTINGS_FILE );
+        settingsRequest.setGlobalSettingsFile( new File( System.getProperty( "maven.home",
+                                                                             System.getProperty( "user.dir", "" ) ),
+                                                         "conf/settings.xml" ) );
+        settingsRequest.setUserSettingsFile( new File( new File( System.getProperty( "user.home" ), ".m2" ),
+                                                       "settings.xml" ) );
         settingsRequest.setSystemProperties( System.getProperties() );
         settingsRequest.setUserProperties( userProperties );
 

@@ -35,7 +35,6 @@ import hudson.model.AbstractProject;
 import hudson.model.Cause;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
-import hudson.model.Job;
 import hudson.model.Node;
 import hudson.model.Run;
 import hudson.scheduler.CronTabList;
@@ -48,57 +47,17 @@ import hudson.util.FormValidation;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Logger;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.artifact.InvalidRepositoryException;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.execution.DefaultMavenExecutionRequest;
-import org.apache.maven.execution.MavenExecutionRequest;
-import org.apache.maven.execution.MavenExecutionRequestPopulationException;
-import org.apache.maven.execution.MavenExecutionRequestPopulator;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.plugin.MavenPluginManager;
-import org.apache.maven.project.DefaultDependencyResolutionRequest;
-import org.apache.maven.project.DependencyResolutionException;
-import org.apache.maven.project.DependencyResolutionResult;
-import org.apache.maven.project.DuplicateProjectException;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuilder;
-import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.project.ProjectBuildingResult;
-import org.apache.maven.project.ProjectDependenciesResolver;
-import org.apache.maven.project.ProjectSorter;
-import org.apache.maven.repository.DelegatingLocalArtifactRepository;
 import org.apache.maven.repository.RepositorySystem;
-import org.apache.maven.repository.internal.MavenRepositorySystemSession;
-import org.apache.maven.settings.building.DefaultSettingsBuildingRequest;
-import org.apache.maven.settings.building.SettingsBuilder;
-import org.apache.maven.settings.building.SettingsBuildingException;
-import org.apache.maven.settings.building.SettingsBuildingRequest;
-import org.apache.maven.settings.building.SettingsBuildingResult;
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.PlexusContainerException;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.codehaus.plexus.util.dag.CycleDetectedException;
-import org.jvnet.hudson.plugins.mavendepsupdate.util.Maven3Utils;
-import org.jvnet.hudson.plugins.mavendepsupdate.util.ReactorReader;
-import org.jvnet.hudson.plugins.mavendepsupdate.util.SnapshotTransfertListener;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.sonatype.aether.repository.LocalRepository;
-import org.sonatype.aether.repository.RepositoryPolicy;
-import org.sonatype.aether.repository.WorkspaceReader;
-import org.sonatype.aether.util.repository.ChainedWorkspaceReader;
 
 import antlr.ANTLRException;
 
@@ -111,16 +70,8 @@ public class MavenDependencyUpdateTrigger
 
     private static final Logger LOGGER = Logger.getLogger( MavenDependencyUpdateTrigger.class.getName() );
 
-   
-    public static final File userMavenConfigurationHome = new File( System.getProperty( "user.home" ), ".m2" );
-
-    public static final File DEFAULT_USER_SETTINGS_FILE = new File( userMavenConfigurationHome, "settings.xml" );
-
-    public static final File DEFAULT_GLOBAL_SETTINGS_FILE =
-        new File( System.getProperty( "maven.home", System.getProperty( "user.dir", "" ) ), "conf/settings.xml" );
-    
     private final boolean checkPlugins;
-    
+
     @DataBoundConstructor
     public MavenDependencyUpdateTrigger( String cron_value, boolean checkPlugins )
         throws ANTLRException
@@ -175,9 +126,6 @@ public class MavenDependencyUpdateTrigger
 
             String projectWorkspace = moduleRoot.getRemote();
 
-            //public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
-            //                           boolean checkPlugins, String projectWorkspace )
-
             MavenUpdateChecker checker = new MavenUpdateChecker( mavenShadedJar, rootPomPath, localRepoPath,
                                                                  this.checkPlugins, projectWorkspace, isMaster );
             if ( isMaster )
@@ -209,76 +157,8 @@ public class MavenDependencyUpdateTrigger
             Thread.currentThread().setContextClassLoader( origClassLoader );
         }
     }
-    
-    
 
-    
-    ProjectBuildingRequest getProjectBuildingRequest( Properties userProperties, PlexusContainer plexusContainer )
-        throws ComponentLookupException, SettingsBuildingException, MavenExecutionRequestPopulationException,
-        InvalidRepositoryException
-    {
-
-        MavenExecutionRequest request = new DefaultMavenExecutionRequest();
-
-        request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
-
-        SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
-
-        RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );
-        
-        org.sonatype.aether.RepositorySystem repoSystem = plexusContainer.lookup( org.sonatype.aether.RepositorySystem.class );
-
-        SettingsBuildingRequest settingsRequest = new DefaultSettingsBuildingRequest();
-        // FIXME find from job configuration
-        settingsRequest.setGlobalSettingsFile( DEFAULT_GLOBAL_SETTINGS_FILE );
-        settingsRequest.setUserSettingsFile( DEFAULT_USER_SETTINGS_FILE );
-        settingsRequest.setSystemProperties( System.getProperties() );
-        settingsRequest.setUserProperties( userProperties );
-
-        SettingsBuildingResult settingsBuildingResult = settingsBuilder.build( settingsRequest );
-
-        MavenExecutionRequestPopulator executionRequestPopulator = plexusContainer
-            .lookup( MavenExecutionRequestPopulator.class );
-
-        executionRequestPopulator.populateFromSettings( request, settingsBuildingResult.getEffectiveSettings() );
-
-        String localRepoPath = getLocalRepo(null).getAbsolutePath();
-        
-        if ( StringUtils.isBlank( localRepoPath ) )
-        {
-            localRepoPath = settingsBuildingResult.getEffectiveSettings().getLocalRepository();
-        }
-        if ( StringUtils.isBlank( localRepoPath ) )
-        {
-            localRepoPath = RepositorySystem.defaultUserLocalRepository.getAbsolutePath();
-        }
-
-        MavenRepositorySystemSession session = new MavenRepositorySystemSession();
-        
-        session.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
-
-        SnapshotTransfertListener snapshotTransfertListener = new SnapshotTransfertListener();
-        session.setTransferListener( snapshotTransfertListener );
-        
-        
-        LocalRepository localRepo = new LocalRepository( localRepoPath );
-        session.setLocalRepositoryManager( repoSystem.newLocalRepositoryManager( localRepo ) );
-        
-        ArtifactRepository localArtifactRepository = repositorySystem.createLocalRepository( new File( localRepoPath ) );
-        
-        request.setLocalRepository( new DelegatingLocalArtifactRepository( localArtifactRepository ) );
-
-        
-        
-        request.getProjectBuildingRequest().setRepositorySession( session );
-        
-        return request.getProjectBuildingRequest();
-    }
-
-    
-    
-
-    private File getLocalRepo(FilePath workspace)
+    private File getLocalRepo( FilePath workspace )
     {
         boolean usePrivateRepo = usePrivateRepo();
         if ( usePrivateRepo )
@@ -287,7 +167,7 @@ public class MavenDependencyUpdateTrigger
         }
         return RepositorySystem.defaultUserLocalRepository;
     }
-    
+
     @Extension
     public static class DescriptorImpl
         extends TriggerDescriptor
@@ -331,25 +211,26 @@ public class MavenDependencyUpdateTrigger
         extends Cause
     {
         private List<String> snapshotsDownloaded;
-        MavenDependencyUpdateTriggerCause(List<String> snapshotsDownloaded)
+
+        MavenDependencyUpdateTriggerCause( List<String> snapshotsDownloaded )
         {
-            this.snapshotsDownloaded = snapshotsDownloaded; 
+            this.snapshotsDownloaded = snapshotsDownloaded;
         }
-        
+
         @Override
         public String getShortDescription()
         {
-            StringBuilder sb = new StringBuilder("maven SNAPSHOT dependency update cause : ");
-            if (snapshotsDownloaded != null && snapshotsDownloaded.size() > 0)
+            StringBuilder sb = new StringBuilder( "maven SNAPSHOT dependency update cause : " );
+            if ( snapshotsDownloaded != null && snapshotsDownloaded.size() > 0 )
             {
-                sb.append(" " );
-                for (String snapshot : snapshotsDownloaded)
+                sb.append( " " );
+                for ( String snapshot : snapshotsDownloaded )
                 {
-                    sb.append( snapshot );    
+                    sb.append( snapshot );
                 }
-                sb.append(" " );
+                sb.append( " " );
             }
-            
+
             return sb.toString();
         }
 
@@ -365,18 +246,18 @@ public class MavenDependencyUpdateTrigger
             return 5 * 2;
         }
     }
-    
+
     private boolean usePrivateRepo()
     {
         // check if FreeStyleProject
-        if (this.job instanceof FreeStyleProject )
+        if ( this.job instanceof FreeStyleProject )
         {
             FreeStyleProject fp = (FreeStyleProject) this.job;
-            for(Builder b : fp.getBuilders())
+            for ( Builder b : fp.getBuilders() )
             {
-                if (b instanceof Maven)
+                if ( b instanceof Maven )
                 {
-                    if (( (Maven) b ).usePrivateRepository)
+                    if ( ( (Maven) b ).usePrivateRepository )
                     {
                         return true;
                     }
@@ -393,28 +274,28 @@ public class MavenDependencyUpdateTrigger
         }
         catch ( SecurityException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( NoSuchMethodException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( IllegalArgumentException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( IllegalAccessException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
         catch ( InvocationTargetException e )
         {
-            LOGGER.warning("ignore " + e.getMessage() );
+            LOGGER.warning( "ignore " + e.getMessage() );
         }
-        
+
         return false;
     }
-    
+
     private Map<String, MavenProject> getProjectMap( List<MavenProject> projects )
     {
         Map<String, MavenProject> index = new LinkedHashMap<String, MavenProject>();

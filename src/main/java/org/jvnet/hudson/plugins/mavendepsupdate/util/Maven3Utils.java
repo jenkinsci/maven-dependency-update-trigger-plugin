@@ -25,14 +25,9 @@ package org.jvnet.hudson.plugins.mavendepsupdate.util;
 
 import hudson.PluginFirstClassLoader;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.logging.Logger;
 
-import org.apache.tools.ant.AntClassLoader;
 import org.codehaus.plexus.DefaultContainerConfiguration;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
@@ -49,21 +44,22 @@ public class Maven3Utils
     private static final Logger LOGGER = Logger.getLogger( Maven3Utils.class.getName() );
     
     /**
-     * FIXME move this to a common library : maven3-utils or tools
      * will build a PlexusContainer from {@link PluginFirstClassLoader}
      * @param pluginFirstClassLoader
      * @return
      * @throws PlexusContainerException
      */
-    public static PlexusContainer getPlexusContainer(PluginFirstClassLoader pluginFirstClassLoader) throws PlexusContainerException {
+    public static PlexusContainer getPlexusContainer( PluginFirstClassLoader pluginFirstClassLoader )
+        throws PlexusContainerException
+    {
         DefaultContainerConfiguration conf = new DefaultContainerConfiguration();
         ClassRealm classRealm = getClassLoader( pluginFirstClassLoader );
         conf.setRealm( classRealm );
 
         return new DefaultPlexusContainer( conf );
     }
-    
-    public static ClassRealm getClassLoader(PluginFirstClassLoader pluginFirstClassLoader)
+
+    public static ClassRealm getClassLoader( PluginFirstClassLoader pluginFirstClassLoader )
     {
         ClassWorld world = new ClassWorld();
         ClassRealm classRealm = new ClassRealm( world, "project-building", pluginFirstClassLoader );
@@ -71,39 +67,9 @@ public class Maven3Utils
         for ( URL url : pluginFirstClassLoader.getURLs() )
         {
             classRealm.addURL( url );
-            LOGGER.fine(  "add url " + url.toExternalForm() );
+            LOGGER.fine( "add url " + url.toExternalForm() );
         }
         return classRealm;
     }
     
-    /**
-     * simple hack to make hpi:run working 
-     * @param urlClassLoader
-     * @return
-     * @throws PlexusContainerException
-     * @throws MalformedURLException
-     * @throws URISyntaxException
-     */
-    public static PlexusContainer getPlexusContainer(URLClassLoader urlClassLoader) throws PlexusContainerException, MalformedURLException, URISyntaxException {
-        DefaultContainerConfiguration conf = new DefaultContainerConfiguration();
-        ClassRealm classRealm = getClassLoader(urlClassLoader);
-        conf.setRealm( classRealm );
-
-        return new DefaultPlexusContainer( conf );
-    }    
-    
-    public static ClassRealm getClassLoader(URLClassLoader urlClassLoader) throws MalformedURLException, URISyntaxException
-    {
-        // here building a parent first
-        AntClassLoader antClassLoader = new AntClassLoader( Thread.currentThread().getContextClassLoader(), false );
-        for ( URL url : urlClassLoader.getURLs() )
-        {
-            File f = new File( url.toURI().toURL().getFile() );
-            LOGGER.info( f.getPath() );
-            antClassLoader.addPathComponent( f );
-        }
-        ClassWorld world = new ClassWorld();
-        ClassRealm classRealm = new ClassRealm( world, "project-building", antClassLoader );
-        return classRealm;
-    }    
 }

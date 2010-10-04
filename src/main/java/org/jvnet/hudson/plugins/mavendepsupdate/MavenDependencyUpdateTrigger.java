@@ -50,6 +50,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 import org.apache.maven.artifact.ArtifactUtils;
@@ -132,6 +133,8 @@ public class MavenDependencyUpdateTrigger
             {
                 checker.setClassLoaderParent( (PluginFirstClassLoader) pluginWrapper.classLoader );
             }
+            checker.setAlternateSettings( getAlternateSettings() );
+            checker.setGlobalSettings( getGlobalSettings() );
 
             LOGGER.info( "run MavenUpdateChecker on node " + node.getDisplayName() );
 
@@ -307,6 +310,27 @@ public class MavenDependencyUpdateTrigger
         }
 
         return index;
+    }
+    
+    //FIXME !!
+    private FilePath getAlternateSettings()
+    {
+        //-s,--settings or from configuration for maven native project
+        return null;
+    }
+    
+    //FIXME !!
+    private FilePath getGlobalSettings()
+    {
+        //-gs,--global-settings
+        return null;
+    }
+    
+    // FIXME !!
+    private Properties getUserProperties()
+    {
+        // use -D from cli and 
+        return new Properties();
     }
 
 }

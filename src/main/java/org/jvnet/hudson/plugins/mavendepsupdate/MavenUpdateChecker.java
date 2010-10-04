@@ -104,10 +104,22 @@ public class MavenUpdateChecker
     private final String projectWorkspace;
 
     private final boolean masterRun;
-
+    
+    
+    //---------------------------------------
+    // optionnal parameters
+    //---------------------------------------
+    
     // use for master run
     private PluginFirstClassLoader classLoaderParent;
 
+    private FilePath alternateSettings;
+    
+    private FilePath globalSettings;
+    
+    private Properties userProperties;
+    
+    
     private MavenUpdateCheckerResult mavenUpdateCheckerResult = new MavenUpdateCheckerResult();
 
     public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
@@ -148,7 +160,7 @@ public class MavenUpdateChecker
             ProjectBuilder projectBuilder = plexusContainer.lookup( ProjectBuilder.class );
 
             // FIXME load userProperties from the job
-            Properties userProperties = new Properties();
+            Properties userProperties = this.userProperties == null ? new Properties() : this.userProperties;
 
             ProjectBuildingRequest projectBuildingRequest = getProjectBuildingRequest( userProperties, plexusContainer );
 
@@ -268,7 +280,7 @@ public class MavenUpdateChecker
             .getContextClassLoader() );
         // parent first as hudson classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
-        String mavenShadedJarPathStr = mavenShadedJarPath.toURI().toURL().getFile();
+        String mavenShadedJarPathStr = mavenShadedJarPath.getRemote();//.toURI().toURL().getFile();
         mavenUpdateCheckerResult.addDebugLine( "add mavenShadedJarPathStr " + mavenShadedJarPathStr );
         List<File> jarFiles = new ArrayList<File>( 1 );
         jarFiles.add( new File( mavenShadedJarPathStr ) );
@@ -295,12 +307,28 @@ public class MavenUpdateChecker
             .lookup( org.sonatype.aether.RepositorySystem.class );
 
         SettingsBuildingRequest settingsRequest = new DefaultSettingsBuildingRequest();
-        // FIXME find from job configuration
-        settingsRequest.setGlobalSettingsFile( new File( System.getProperty( "maven.home",
+
+        if (globalSettings != null)
+        {
+            mavenUpdateCheckerResult.addDebugLine( "globalSettings " + globalSettings.getRemote() );
+            settingsRequest.setGlobalSettingsFile( new File( globalSettings.getRemote() ) );
+        }
+        else
+        {
+            settingsRequest.setGlobalSettingsFile( new File( System.getProperty( "maven.home",
                                                                              System.getProperty( "user.dir", "" ) ),
                                                          "conf/settings.xml" ) );
-        settingsRequest.setUserSettingsFile( new File( new File( System.getProperty( "user.home" ), ".m2" ),
-                                                       "settings.xml" ) );
+        }
+        if (alternateSettings != null)
+        {
+            mavenUpdateCheckerResult.addDebugLine( "alternateSettings " + alternateSettings.getRemote() );
+            settingsRequest.setUserSettingsFile( new File(alternateSettings.getRemote()) );
+        }
+        else
+        {
+            settingsRequest.setUserSettingsFile( new File( new File( System.getProperty( "user.home" ), ".m2" ),
+            "settings.xml" ) );
+        }
         settingsRequest.setSystemProperties( System.getProperties() );
         settingsRequest.setUserProperties( userProperties );
 
@@ -346,5 +374,20 @@ public class MavenUpdateChecker
     public void setClassLoaderParent( PluginFirstClassLoader classLoaderParent )
     {
         this.classLoaderParent = classLoaderParent;
+    }
+
+    public void setAlternateSettings( FilePath alternateSettings )
+    {
+        this.alternateSettings = alternateSettings;
+    }
+
+    public void setGlobalSettings( FilePath globalSettings )
+    {
+        this.globalSettings = globalSettings;
+    }
+
+    public void setUserProperties( Properties userProperties )
+    {
+        this.userProperties = userProperties;
     }
 }

@@ -19,7 +19,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <mavenVersion>3.0-beta-3</mavenVersion>
     <wagonVersion>1.0-beta-6</wagonVersion>  
-    <aetherVersion>1.6</aetherVersion>
+    <aetherVersion>1.7</aetherVersion>
     <sisuInjectVersion>1.4.2</sisuInjectVersion>
   </properties>
   
@@ -109,12 +109,14 @@
       <version>${wagonVersion}</version>
     </dependency>
     
+    <!-- 
+    use this with maven 3 final
     <dependency>
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-inject-plexus</artifactId>
       <version>${sisuInjectVersion}</version>
     </dependency>     
-    
+     -->
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-classworlds</artifactId>
@@ -214,6 +216,12 @@
         <configuration>
           <pluginFirstClassLoader>true</pluginFirstClassLoader>
           <disabledTestInjection>true</disabledTestInjection>
+          <webResources>
+            <webResource>
+              <filtering>false</filtering>
+              <directory>./target/shaded-maven/</directory>
+            </webResource>
+          </webResources>
         </configuration>
       </plugin>
       <plugin>
@@ -237,6 +245,49 @@
           <target>1.5</target>
         </configuration>
       </plugin>    
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <outputFile>./target/shaded-maven/maven-dependency-update-trigger-shaded-maven.jar</outputFile>
+              <artifactSet>
+                <excludes>
+                  <exclude>junit:junit</exclude>
+                  <exclude>org.jvnet.hudson.main:maven-plugin</exclude>
+                  <exclude>org.jvnet.hudson.main:maven-agent</exclude>
+                  <exclude>org.jvnet.hudson.main:maven-interceptor</exclude>
+                  <exclude>commons-httpclient:commons-httpclient</exclude>
+                  <exclude>org.jvnet.hudson:maven2.1-interceptor</exclude>
+                  <exclude>org.jvnet.hudson:wagon-webdav</exclude>
+                  <exclude>slide:slide-webdavlib</exclude>
+                  <exclude>de.zeigermann.xml:xml-im-exporter</exclude>
+                  <exclude>commons-codec:commons-codec</exclude>
+                  <exclude>avalon-framework:avalon-framework</exclude>
+                  <exclude>logkit:logkit</exclude>
+                  <exclude>commons-logging:commons-logging</exclude>
+                  <exclude>log4j:log4j</exclude>
+                  <exclude>asm:asm</exclude>
+                  <!-- 
+                  <exclude>org.apache.ant:ant</exclude>
+                  <exclude>org.apache.ant:ant-launcher</exclude>
+                   -->
+                  <exclude>${project.groupId}:${project.artifactId}</exclude>
+                </excludes>
+              </artifactSet>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
+              </transformers>              
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>

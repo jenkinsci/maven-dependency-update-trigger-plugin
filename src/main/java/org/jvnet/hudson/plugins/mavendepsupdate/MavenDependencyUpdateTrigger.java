@@ -77,6 +77,8 @@ public class MavenDependencyUpdateTrigger
     private static final Logger LOGGER = Logger.getLogger( MavenDependencyUpdateTrigger.class.getName() );
 
     private final boolean checkPlugins;
+    
+    public static boolean debug = Boolean.getBoolean( "MavenDependencyUpdateTrigger.debug" );
 
     @DataBoundConstructor
     public MavenDependencyUpdateTrigger( String cron_value, boolean checkPlugins )
@@ -152,7 +154,15 @@ public class MavenDependencyUpdateTrigger
 
             MavenUpdateCheckerResult mavenUpdateCheckerResult = virtualChannel.call( checker );
 
-            LOGGER.info( "run MavenUpdateChecker on node " + node.getDisplayName() + " done " );
+            if ( debug )
+            {
+                StringBuilder debugLines = new StringBuilder();
+                for ( String line : mavenUpdateCheckerResult.getDebugLines() )
+                {
+                    debugLines.append( line ).append( SystemUtils.LINE_SEPARATOR );
+                }
+                LOGGER.info( debugLines.toString() );
+            }
 
             if ( mavenUpdateCheckerResult.getFileUpdatedNames().size() > 0 )
             {

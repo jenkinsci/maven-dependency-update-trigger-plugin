@@ -50,15 +50,20 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.cli.CLIManager;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.repository.RepositorySystem;
@@ -79,6 +84,8 @@ public class MavenDependencyUpdateTrigger
     private final boolean checkPlugins;
     
     public static boolean debug = Boolean.getBoolean( "MavenDependencyUpdateTrigger.debug" );
+    
+    private static final CLIManager mavenCliManager = new CLIManager();  
 
     @DataBoundConstructor
     public MavenDependencyUpdateTrigger( String cron_value, boolean checkPlugins )
@@ -149,6 +156,8 @@ public class MavenDependencyUpdateTrigger
             checker.setGlobalSettings( globalSettings );
 
             checker.setUserProperties( getUserProperties() );
+            
+            checker.setActiveProfiles( getActiveProfiles() );
             
             LOGGER.info( "run MavenUpdateChecker for project " + job.getName() + " on node " + node.getDisplayName() );
 
@@ -343,7 +352,6 @@ public class MavenDependencyUpdateTrigger
         return index;
     }
     
-    //FIXME !!
     private FilePath getAlternateSettings(VirtualChannel virtualChannel)
     {
         //-s,--settings or from configuration for maven native project
@@ -361,12 +369,10 @@ public class MavenDependencyUpdateTrigger
                     {
                         return null;
                     }
-                    for ( int i = 0, size = args.length; i < size; i++ )
+                    CommandLine cli = getCommandLine( args );
+                    if ( cli != null && cli.hasOption( CLIManager.ALTERNATE_USER_SETTINGS ) )
                     {
-                        if (StringUtils.equals( "-s", args[i] ) || StringUtils.equals( "--settings", args[i] ))
-                        {
-                            return new FilePath( virtualChannel, args[i+1]);
-                        }
+                        return new FilePath( virtualChannel, cli.getOptionValue( CLIManager.ALTERNATE_POM_FILE ) );
                     }
                 }
             }
@@ -406,7 +412,6 @@ public class MavenDependencyUpdateTrigger
         return null;
     }
     
-    //FIXME !!
     private FilePath getGlobalSettings(VirtualChannel virtualChannel)
     {
         //-gs,--global-settings
@@ -423,12 +428,10 @@ public class MavenDependencyUpdateTrigger
                     {
                         return null;
                     }
-                    for ( int i = 0, size = args.length; i < size; i++ )
+                    CommandLine cli = getCommandLine( args );
+                    if ( cli != null && cli.hasOption( CLIManager.ALTERNATE_GLOBAL_SETTINGS ) )
                     {
-                        if (StringUtils.equals( "-gs", args[i] ) || StringUtils.equals( "--global-settings", args[i] ))
-                        {
-                            return new FilePath( virtualChannel, args[i+1]);
-                        }
+                        return new FilePath( virtualChannel, cli.getOptionValue( CLIManager.ALTERNATE_GLOBAL_SETTINGS ) );
                     }
                 }
             }
@@ -460,7 +463,6 @@ public class MavenDependencyUpdateTrigger
         return p;
     }
     
-    //FIXME check -f from cli
     private String getRootPomPath()
     {
         
@@ -473,16 +475,15 @@ public class MavenDependencyUpdateTrigger
                 {
                     String targets = ( (Maven) b ).getTargets();
                     String[] args = Util.tokenize( targets );
-                    if ( args == null )
+                    
+                    if ( args == null  )
                     {
                         return null;
                     }
-                    for ( int i = 0, size = args.length; i < size; i++ )
+                    CommandLine cli = getCommandLine( args );
+                    if (cli != null && cli.hasOption( CLIManager.ALTERNATE_POM_FILE ))
                     {
-                        if (StringUtils.equals( "-f", args[i] ) )
-                        {
-                            return args[i+1];
-                        }
+                        return cli.getOptionValue( CLIManager.ALTERNATE_POM_FILE );
                     }
                 }
             }
@@ -518,6 +519,83 @@ public class MavenDependencyUpdateTrigger
         }        
         
         return "pom.xml";
+    }
+    
+    private List<String>  getActiveProfiles()
+    {
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            for ( Builder b : fp.getBuilders() )
+            {
+                if ( b instanceof Maven )
+                {
+                    String targets = ( (Maven) b ).getTargets();
+                    String[] args = Util.tokenize( targets );
+                    
+                    if ( args == null  )
+                    {
+                        return null;
+                    }
+                    CommandLine cli = getCommandLine( args );
+                    if (cli != null && cli.hasOption( CLIManager.ACTIVATE_PROFILES ))
+                    {
+                        return Arrays.asList( cli.getOptionValues( CLIManager.ACTIVATE_PROFILES ) );
+                    }
+                }
+            }
+            return Collections.emptyList();
+        }
+        // check if there is a method called getGoals
+        try
+        {
+            Method method = this.job.getClass().getMethod( "getGoals", null );
+            String goals = (String) method.invoke( this.job, null );
+            String[] args = Util.tokenize( goals );
+            if ( args == null  )
+            {
+                return null;
+            }
+            CommandLine cli = getCommandLine( args );
+            if (cli != null && cli.hasOption( CLIManager.ACTIVATE_PROFILES ))
+            {
+                return Arrays.asList( cli.getOptionValues( CLIManager.ACTIVATE_PROFILES ) );
+            }            
+        }
+        catch ( SecurityException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( NoSuchMethodException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( IllegalAccessException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        catch ( InvocationTargetException e )
+        {
+            LOGGER.warning( "ignore " + e.getMessage() );
+        }
+        return Collections.emptyList();
+    }
+    
+    private CommandLine getCommandLine(String[] args)
+    {
+        try
+        {
+            return mavenCliManager.parse( args );
+        }
+        catch ( ParseException e )
+        {
+            LOGGER.info( "ignore error parsing maven args " + e.getMessage());
+            return null;
+        }
     }
 
 }

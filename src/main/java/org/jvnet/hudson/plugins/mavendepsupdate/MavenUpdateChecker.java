@@ -51,6 +51,7 @@ import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionRequestPopulationException;
 import org.apache.maven.execution.MavenExecutionRequestPopulator;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.Profile;
 import org.apache.maven.plugin.MavenPluginManager;
 import org.apache.maven.project.DefaultDependencyResolutionRequest;
 import org.apache.maven.project.DependencyResolutionResult;
@@ -118,6 +119,8 @@ public class MavenUpdateChecker
     private FilePath globalSettings;
     
     private Properties userProperties;
+    
+    private List<String> activeProfiles = new ArrayList<String>();
     
     
     private MavenUpdateCheckerResult mavenUpdateCheckerResult = new MavenUpdateCheckerResult();
@@ -299,6 +302,8 @@ public class MavenUpdateChecker
 
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
+        
+                
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 
         RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );
@@ -353,9 +358,20 @@ public class MavenUpdateChecker
 
         request.setLocalRepository( new DelegatingLocalArtifactRepository( localArtifactRepository ) );
 
-        request.getProjectBuildingRequest().setRepositorySession( session );
-
-        return request.getProjectBuildingRequest();
+        if (this.activeProfiles != null && !this.activeProfiles.isEmpty())
+        {
+            for (String id : this.activeProfiles)
+            {
+                Profile p = new Profile();
+                p.setId( id );
+                p.setSource( "cli" );
+                request.addProfile( p );
+                request.addActiveProfile( id );
+            }
+        }
+        //request.setp
+        ProjectBuildingRequest projectBuildingRequest = request.getProjectBuildingRequest();
+        return projectBuildingRequest.setRepositorySession( session );
     }
 
     private Map<String, MavenProject> getProjectMap( List<MavenProject> projects )
@@ -389,5 +405,10 @@ public class MavenUpdateChecker
     public void setUserProperties( Properties userProperties )
     {
         this.userProperties = userProperties;
+    }
+
+    public void setActiveProfiles( List<String> activeProfiles )
+    {
+        this.activeProfiles = activeProfiles;
     }
 }

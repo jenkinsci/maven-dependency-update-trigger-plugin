@@ -149,7 +149,7 @@ public class MavenUpdateChecker
             PlexusContainer plexusContainer = getPlexusContainer( pluginFirstClassLoader );
 
             Thread.currentThread().setContextClassLoader( plexusContainer.getContainerRealm() );
-            mavenUpdateCheckerResult.addDebugLine( "ok pour new DefaultPlexusContainer( conf ) " );
+            mavenUpdateCheckerResult.addDebugLine( "ok for new DefaultPlexusContainer( conf ) " );
             mavenUpdateCheckerResult.addDebugLine( "Thread.currentThread().getContextClassLoader() "
                 + Thread.currentThread().getContextClassLoader() );
             mavenUpdateCheckerResult.addDebugLine( "Thread.currentThread().getContextClassLoader().parent "

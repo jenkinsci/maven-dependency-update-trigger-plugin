@@ -82,7 +82,12 @@ public class ReactorReader
             return project.getFile();
         }
 
-        return findMatchingArtifact( project, artifact ).getFile();
+        org.apache.maven.artifact.Artifact matchingArtifact = findMatchingArtifact( project, artifact );
+        if ( matchingArtifact != null )
+        {
+            return matchingArtifact.getFile();
+        }
+        return null;
     }
 
     /**

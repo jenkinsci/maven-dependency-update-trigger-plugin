@@ -29,7 +29,6 @@ import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
 import hudson.PluginWrapper;
 import hudson.Util;
-import hudson.maven.MavenModule;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.TopLevelItem;

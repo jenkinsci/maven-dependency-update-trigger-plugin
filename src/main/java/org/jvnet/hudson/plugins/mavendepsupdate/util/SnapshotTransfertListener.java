@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.StringUtils;
 import org.sonatype.aether.transfer.TransferCancelledException;
 import org.sonatype.aether.transfer.TransferEvent;
 import org.sonatype.aether.transfer.TransferListener;
@@ -84,7 +85,7 @@ public class SnapshotTransfertListener
             if ( file != null && transferEvent.getResource().getResourceName().contains( "SNAPSHOT" ) )
             {
                 // filtering on maven metadata
-                if ( file.getName().endsWith( ".jar" ) || file.getName().endsWith( ".war" ) )
+                if ( !StringUtils.contains( file.getName(),"maven-metadata.xml" ))
                 {
                     LOGGER.info( "download " + file.getName() );
                     snapshots.add( file.getName() );

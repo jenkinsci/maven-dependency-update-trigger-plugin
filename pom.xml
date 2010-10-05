@@ -9,7 +9,7 @@
 
   <groupId>org.jvnet.hudson.plugins</groupId>
   <artifactId>maven-dependency-update-trigger</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
   <packaging>hpi</packaging>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Maven+Dependency+Update+trigger</url>
   <name>Maven Dependency Update Trigger</name>
@@ -344,7 +344,7 @@
                 </excludes>
               </artifactSet>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
               </transformers>              
             </configuration>
           </execution>
@@ -456,4 +456,10 @@
       <url>file:.</url>
     </snapshotRepository>
   </distributionManagement>
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/maven-dependency-update-trigger-1.1</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/maven-dependency-update-trigger-1.1</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/tags/maven-dependency-update-trigger-1.1</url>
+  </scm>
 </project>

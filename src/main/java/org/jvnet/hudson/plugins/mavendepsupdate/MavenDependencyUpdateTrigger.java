@@ -156,7 +156,8 @@ public class MavenDependencyUpdateTrigger
 
             if ( debug )
             {
-                StringBuilder debugLines = new StringBuilder();
+                StringBuilder debugLines = new StringBuilder( "MavenUpdateChecker for project " + job.getName()
+                    + " on node " + node.getDisplayName() );
                 for ( String line : mavenUpdateCheckerResult.getDebugLines() )
                 {
                     debugLines.append( line ).append( SystemUtils.LINE_SEPARATOR );

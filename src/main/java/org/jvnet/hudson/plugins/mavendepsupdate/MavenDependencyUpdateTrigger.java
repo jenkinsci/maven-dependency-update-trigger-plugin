@@ -58,6 +58,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
@@ -148,7 +149,7 @@ public class MavenDependencyUpdateTrigger
 
             checker.setUserProperties( getUserProperties() );
             
-            LOGGER.info( "run MavenUpdateChecker on node " + node.getDisplayName() );
+            LOGGER.info( "run MavenUpdateChecker for project " + job.getName() + " on node " + node.getDisplayName() );
 
             MavenUpdateCheckerResult mavenUpdateCheckerResult = virtualChannel.call( checker );
 
@@ -156,10 +157,18 @@ public class MavenDependencyUpdateTrigger
 
             if ( mavenUpdateCheckerResult.getFileUpdatedNames().size() > 0 )
             {
-                LOGGER.info( "snapshotDownloaded so triggering a new build" );
+                StringBuilder stringBuilder = new StringBuilder( "MavenUpdateChecker for project " + job.getName()
+                    + " on node " + node.getDisplayName() );
+                stringBuilder.append( " , snapshotDownloaded so triggering a new build : " )
+                    .append( SystemUtils.LINE_SEPARATOR );
+                for ( String fileName : mavenUpdateCheckerResult.getFileUpdatedNames() )
+                {
+                    stringBuilder.append( " * " + fileName ).append( SystemUtils.LINE_SEPARATOR );
+                }
                 job.scheduleBuild( 0,
                                    new MavenDependencyUpdateTriggerCause( mavenUpdateCheckerResult
                                        .getFileUpdatedNames() ) );
+                LOGGER.info( stringBuilder.toString() );
             }
 
         }

@@ -383,8 +383,8 @@ public class MavenDependencyUpdateTrigger
         try
         {
             Method method = this.job.getClass().getMethod( "getAlternateSettings", null );
-            String rootPom = (String) method.invoke( this.job, null );
-            return rootPom != null ? new FilePath( virtualChannel, rootPom ) : null;
+            String alternateSettings = (String) method.invoke( this.job, null );
+            return alternateSettings != null ? new FilePath( virtualChannel, alternateSettings ) : null;
         }
         catch ( SecurityException e )
         {

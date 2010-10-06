@@ -193,7 +193,7 @@ public class MavenDependencyUpdateTrigger
 
             long end = System.currentTimeMillis();
             LOGGER.info( "time to run MavenUpdateChecker for project " + job.getName() + " on node "
-                + node.getDisplayName() + ( end - start ) + " ms" );
+                + node.getDisplayName() + " : " + ( end - start ) + " ms" );
         }
         catch ( Exception e )
         {

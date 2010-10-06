@@ -9,7 +9,7 @@
 
   <groupId>org.jvnet.hudson.plugins</groupId>
   <artifactId>maven-dependency-update-trigger</artifactId>
-  <version>1.2</version>
+  <version>1.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Maven+Dependency+Update+trigger</url>
   <name>Maven Dependency Update Trigger</name>
@@ -456,10 +456,4 @@
       <url>file:.</url>
     </snapshotRepository>
   </distributionManagement>
-
-  <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/maven-dependency-update-trigger-1.2</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/maven-dependency-update-trigger-1.2</developerConnection>
-    <url>https://hudson.dev.java.net/source/browse/hudson/tags/maven-dependency-update-trigger-1.2</url>
-  </scm>
 </project>

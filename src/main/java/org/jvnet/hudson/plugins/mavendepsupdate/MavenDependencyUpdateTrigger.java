@@ -98,6 +98,7 @@ public class MavenDependencyUpdateTrigger
     @Override
     public void run()
     {
+        long start = System.currentTimeMillis();
         ProjectBuildingRequest projectBuildingRequest = null;
 
         Node node = super.job.getLastBuiltOn();
@@ -190,6 +191,9 @@ public class MavenDependencyUpdateTrigger
                 LOGGER.info( stringBuilder.toString() );
             }
 
+            long end = System.currentTimeMillis();
+            LOGGER.info( "time to run MavenUpdateChecker for project " + job.getName() + " on node "
+                + node.getDisplayName() + ( end - start ) + " ms" );
         }
         catch ( Exception e )
         {
@@ -266,7 +270,7 @@ public class MavenDependencyUpdateTrigger
             StringBuilder sb = new StringBuilder( "maven SNAPSHOT dependency update cause : " );
             if ( snapshotsDownloaded != null && snapshotsDownloaded.size() > 0 )
             {
-                sb.append( " " );
+                sb.append( "," );
                 for ( String snapshot : snapshotsDownloaded )
                 {
                     sb.append( snapshot );

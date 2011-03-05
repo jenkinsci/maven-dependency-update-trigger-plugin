@@ -10,7 +10,7 @@
   <artifactId>maven-dependency-update-trigger</artifactId>
   <version>1.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
-  <url>http://wiki.hudson-ci.org/display/HUDSON/Maven+Dependency+Update+trigger</url>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/Maven+Dependency+Update+trigger</url>
   <name>Maven Dependency Update Trigger</name>
 
   <properties>

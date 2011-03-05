@@ -14,7 +14,7 @@
   <name>Maven Dependency Update Trigger</name>
 
   <properties>
-    <hudsonCoreVersion>1.379</hudsonCoreVersion>
+    <jenkinsCoreVersion>1.399</jenkinsCoreVersion>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <mavenVersion>3.0-beta-3</mavenVersion>
     <wagonVersion>1.0-beta-6</wagonVersion>  
@@ -202,30 +202,30 @@
     </dependency>     
     
     <dependency>
-      <groupId>org.jvnet.hudson.main</groupId>
-      <artifactId>hudson-war</artifactId>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>jenkins-war</artifactId>
       <type>war</type>
-      <version>${hudsonCoreVersion}</version>
+      <version>${jenkinsCoreVersion}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jvnet.hudson.main</groupId>
-      <artifactId>hudson-core</artifactId>
-      <version>${hudsonCoreVersion}</version>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>jenkins-core</artifactId>
+      <version>${jenkinsCoreVersion}</version>
       <scope>provided</scope>
     </dependency>
     
     <dependency>
-      <groupId>org.jvnet.hudson.main</groupId>
+      <groupId>org.jenkins-ci.main</groupId>
       <artifactId>remoting</artifactId>
-      <version>${hudsonCoreVersion}</version>
+      <version>${jenkinsCoreVersion}</version>
       <scope>provided</scope>
     </dependency>
  
     <dependency>
-      <groupId>org.jvnet.hudson.main</groupId>
+      <groupId>org.jenkins-ci.main</groupId>
       <artifactId>maven-plugin</artifactId>
-      <version>${hudsonCoreVersion}</version>
+      <version>${jenkinsCoreVersion}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -240,16 +240,16 @@
     </dependency> 
  
     <dependency>
-      <groupId>org.jvnet.hudson.main</groupId>
-      <artifactId>hudson-test-harness</artifactId>
-      <version>${hudsonCoreVersion}</version>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>jenkins-test-harness</artifactId>
+      <version>${jenkinsCoreVersion}</version>
       <scope>test</scope>
     </dependency>  
     
     <dependency>
-      <groupId>org.jvnet.hudson.main</groupId>
+      <groupId>org.jenkins-ci.main</groupId>
       <artifactId>ui-samples-plugin</artifactId>
-      <version>${hudsonCoreVersion}</version>
+      <version>${jenkinsCoreVersion}</version>
       <scope>test</scope>
     </dependency>  
      
@@ -259,9 +259,9 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.jvnet.hudson.tools</groupId>
+          <groupId>org.jenkins-ci.tools</groupId>
           <artifactId>maven-hpi-plugin</artifactId>
-          <version>1.54</version>
+          <version>1.64</version>
           <configuration>
             <pluginFirstClassLoader>true</pluginFirstClassLoader>
             <disabledTestInjection>true</disabledTestInjection>
@@ -285,9 +285,9 @@
     </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.jvnet.hudson.tools</groupId>
+        <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
-        <version>1.54</version>
+        <version>1.64</version>
         <extensions>true</extensions>
         <configuration>
           <pluginFirstClassLoader>true</pluginFirstClassLoader>
@@ -327,11 +327,11 @@
               <artifactSet>
                 <excludes>
                   <exclude>junit:junit</exclude>
-                  <exclude>org.jvnet.hudson.main:maven-plugin</exclude>
-                  <exclude>org.jvnet.hudson.main:maven-agent</exclude>
-                  <exclude>org.jvnet.hudson.main:maven-interceptor</exclude>
+                  <exclude>org.jenkins-ci.main:maven-plugin</exclude>
+                  <exclude>org.jenkins-ci.main:maven-agent</exclude>
+                  <exclude>org.jenkins-ci.main:maven-interceptor</exclude>
                   <exclude>commons-httpclient:commons-httpclient</exclude>
-                  <exclude>org.jvnet.hudson:maven2.1-interceptor</exclude>
+                  <exclude>org.jenkins-ci.main:maven2.1-interceptor</exclude>
                   <exclude>org.jvnet.hudson:wagon-webdav</exclude>
                   <exclude>slide:slide-webdavlib</exclude>
                   <exclude>de.zeigermann.xml:xml-im-exporter</exclude>
@@ -410,14 +410,14 @@
   <repositories>
     <repository>
       <id>m.g.o-public</id>
-      <url>http://maven.glassfish.org/content/groups/public/</url>
+      <url>http://maven.jenkins-ci.org:8081/content/groups/artifacts/</url>
     </repository>
   </repositories>
 
   <pluginRepositories>
     <pluginRepository>
       <id>m.g.o-public</id>
-      <url>http://maven.glassfish.org/content/groups/public/</url>
+      <url>http://maven.jenkins-ci.org:8081/content/groups/artifacts/</url>
     </pluginRepository>
   </pluginRepositories>
   

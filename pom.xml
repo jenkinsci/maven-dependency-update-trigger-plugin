@@ -3,10 +3,9 @@
     <parent>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>plugin</artifactId>
-      <version>1.403</version>
+      <version>1.398</version>
     </parent>
 
-  <groupId>org.jvnet.hudson.plugins</groupId>
   <artifactId>maven-dependency-update-trigger</artifactId>
   <version>1.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
@@ -14,18 +13,17 @@
   <name>Maven Dependency Update Trigger</name>
 
   <properties>
-    <jenkinsCoreVersion>1.399</jenkinsCoreVersion>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <mavenVersion>3.0-beta-3</mavenVersion>
-    <wagonVersion>1.0-beta-6</wagonVersion>  
+    <mavenVersion>3.0</mavenVersion>
+    <wagonVersion>1.0</wagonVersion>
     <aetherVersion>1.7</aetherVersion>
     <sisuInjectVersion>1.4.2</sisuInjectVersion>
   </properties>
   
   <scm>
-   <connection>scm:git:git://github.com/hudson/maven-dependency-update-trigger-plugin.git</connection>
-   <developerConnection>scm:git:git@github.com:hudson/maven-dependency-update-trigger-plugin.git</developerConnection>
-   <url>https://github.com/hudson/maven-dependency-update-trigger-plugin</url>
+    <connection>scm:git:git://github.com/jenkinsci/maven-dependency-update-trigger-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/maven-dependency-update-trigger-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/maven-dependency-update-trigger-plugin</url>
   </scm>  
   
   <developers>
@@ -82,7 +80,6 @@
       <artifactId>maven-settings-builder</artifactId>
       <version>${mavenVersion}</version>
     </dependency>
-          
     
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -203,29 +200,7 @@
     
     <dependency>
       <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-war</artifactId>
-      <type>war</type>
-      <version>${jenkinsCoreVersion}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-core</artifactId>
-      <version>${jenkinsCoreVersion}</version>
-      <scope>provided</scope>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>remoting</artifactId>
-      <version>${jenkinsCoreVersion}</version>
-      <scope>provided</scope>
-    </dependency>
- 
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
       <artifactId>maven-plugin</artifactId>
-      <version>${jenkinsCoreVersion}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -239,20 +214,6 @@
       </exclusions>
     </dependency> 
  
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-test-harness</artifactId>
-      <version>${jenkinsCoreVersion}</version>
-      <scope>test</scope>
-    </dependency>  
-    
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>ui-samples-plugin</artifactId>
-      <version>${jenkinsCoreVersion}</version>
-      <scope>test</scope>
-    </dependency>  
-     
   </dependencies>
   
   <build>
@@ -261,7 +222,6 @@
         <plugin>
           <groupId>org.jenkins-ci.tools</groupId>
           <artifactId>maven-hpi-plugin</artifactId>
-          <version>1.64</version>
           <configuration>
             <pluginFirstClassLoader>true</pluginFirstClassLoader>
             <disabledTestInjection>true</disabledTestInjection>
@@ -287,7 +247,6 @@
       <plugin>
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
-        <version>1.64</version>
         <extensions>true</extensions>
         <configuration>
           <pluginFirstClassLoader>true</pluginFirstClassLoader>

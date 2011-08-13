@@ -22,5 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <div>
-  
+  This plugin will check if any SNAPSHOT dependencies (or optionally plugins SNAPSHOT)
+  have been updated during your project's dependencies resolution and trigger a build. 
 </div>

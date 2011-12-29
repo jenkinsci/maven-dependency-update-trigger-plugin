@@ -105,28 +105,30 @@ public class MavenUpdateChecker
     private final String projectWorkspace;
 
     private final boolean masterRun;
-    
-    
+
+
     //---------------------------------------
     // optionnal parameters
     //---------------------------------------
-    
+
     // use for master run
     private PluginFirstClassLoader classLoaderParent;
 
     private FilePath alternateSettings;
-    
+
     private FilePath globalSettings;
-    
+
     private Properties userProperties;
-    
+
     private List<String> activeProfiles = new ArrayList<String>();
-    
-    
+
+
     private MavenUpdateCheckerResult mavenUpdateCheckerResult = new MavenUpdateCheckerResult();
 
+    private String mavenHome;
+
     public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
-                               boolean checkPlugins, String projectWorkspace, boolean masterRun )
+                               boolean checkPlugins, String projectWorkspace, boolean masterRun, String mavenHome )
     {
         this.mavenShadedJarPath = mavenShadedJarPath;
         this.rootPomPath = rootPomPath;
@@ -134,6 +136,7 @@ public class MavenUpdateChecker
         this.checkPlugins = checkPlugins;
         this.projectWorkspace = projectWorkspace;
         this.masterRun = masterRun;
+        this.mavenHome = mavenHome;
     }
 
     public MavenUpdateCheckerResult call()
@@ -302,8 +305,6 @@ public class MavenUpdateChecker
 
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
-        
-                
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 
         RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );
@@ -320,19 +321,22 @@ public class MavenUpdateChecker
         }
         else
         {
-            settingsRequest.setGlobalSettingsFile( new File( System.getProperty( "maven.home",
-                                                                             System.getProperty( "user.dir", "" ) ),
-                                                         "conf/settings.xml" ) );
+            File globalSettings = new File( mavenHome, "conf/settings.xml" );
+            if (globalSettings.exists()) {
+                settingsRequest.setGlobalSettingsFile( globalSettings );
+            }
         }
         if (alternateSettings != null)
         {
             mavenUpdateCheckerResult.addDebugLine( "alternateSettings " + alternateSettings.getRemote() );
             settingsRequest.setUserSettingsFile( new File(alternateSettings.getRemote()) );
+            request.setUserSettingsFile( new File(alternateSettings.getRemote()) );
         }
         else
         {
-            settingsRequest.setUserSettingsFile( new File( new File( System.getProperty( "user.home" ), ".m2" ),
-            "settings.xml" ) );
+            File defaultUserSettings = new File( new File( System.getProperty( "user.home" ), ".m2" ), "settings.xml" ) ;
+            settingsRequest.setUserSettingsFile(defaultUserSettings );
+            request.setUserSettingsFile( defaultUserSettings );
         }
         settingsRequest.setSystemProperties( System.getProperties() );
         settingsRequest.setUserProperties( userProperties );
@@ -344,6 +348,8 @@ public class MavenUpdateChecker
 
         executionRequestPopulator.populateFromSettings( request, settingsBuildingResult.getEffectiveSettings() );
 
+        executionRequestPopulator.populateDefaults( request );
+
         MavenRepositorySystemSession session = new MavenRepositorySystemSession();
 
         session.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
@@ -351,12 +357,23 @@ public class MavenUpdateChecker
         SnapshotTransfertListener snapshotTransfertListener = new SnapshotTransfertListener();
         session.setTransferListener( snapshotTransfertListener );
 
-        LocalRepository localRepo = new LocalRepository( localRepoPath );
+        LocalRepository localRepo = null;
+        if (StringUtils.isEmpty( localRepoPath )){
+           localRepo = new LocalRepository( settingsBuildingResult.getEffectiveSettings().getLocalRepository() );
+        } else {
+           localRepo = new LocalRepository( localRepoPath );
+        }
+
         session.setLocalRepositoryManager( repoSystem.newLocalRepositoryManager( localRepo ) );
 
-        ArtifactRepository localArtifactRepository = repositorySystem.createLocalRepository( new File( localRepoPath ) );
+        ArtifactRepository localArtifactRepository = null;
+        if (StringUtils.isEmpty( localRepoPath )){
+            localArtifactRepository = repositorySystem.createLocalRepository( new File( settingsBuildingResult.getEffectiveSettings().getLocalRepository() ) );
+        } else {
+            localArtifactRepository = repositorySystem.createLocalRepository( new File( localRepoPath ) );
+        }
 
-        request.setLocalRepository( new DelegatingLocalArtifactRepository( localArtifactRepository ) );
+        request.setLocalRepository( localArtifactRepository );
 
         if (this.activeProfiles != null && !this.activeProfiles.isEmpty())
         {
@@ -369,7 +386,7 @@ public class MavenUpdateChecker
                 request.addActiveProfile( id );
             }
         }
-        //request.setp
+
         ProjectBuildingRequest projectBuildingRequest = request.getProjectBuildingRequest();
         return projectBuildingRequest.setRepositorySession( session );
     }

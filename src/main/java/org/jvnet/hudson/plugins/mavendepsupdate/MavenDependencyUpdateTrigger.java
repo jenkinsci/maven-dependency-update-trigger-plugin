@@ -29,6 +29,8 @@ import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
 import hudson.PluginWrapper;
 import hudson.Util;
+import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.TopLevelItem;
@@ -138,12 +140,19 @@ public class MavenDependencyUpdateTrigger
             
             String rootPomPath = moduleRoot.getRemote() + "/" + getRootPomPath();
 
-            String localRepoPath = getLocalRepo( workspace ).toString();
+            File localRepoFile = getLocalRepo( workspace );
+            String localRepoPath = localRepoFile == null ? "" : localRepoFile.toString();
 
             String projectWorkspace = moduleRoot.getRemote();
 
+            Maven.MavenInstallation mavenInstallation = getMavenInstallation();
+            
+            mavenInstallation =  mavenInstallation.forNode( node, null );
+            
+            String mavenHome = mavenInstallation.getHomeDir().getPath();
+
             MavenUpdateChecker checker = new MavenUpdateChecker( mavenShadedJar, rootPomPath, localRepoPath,
-                                                                 this.checkPlugins, projectWorkspace, isMaster );
+                                                                 this.checkPlugins, projectWorkspace, isMaster, mavenHome );
             if ( isMaster )
             {
                 checker.setClassLoaderParent( (PluginFirstClassLoader) pluginWrapper.classLoader );
@@ -212,7 +221,7 @@ public class MavenDependencyUpdateTrigger
         {
             return new File( workspace.getRemote(), ".repository" );
         }
-        return RepositorySystem.defaultUserLocalRepository;
+        return null;
     }
 
     @Extension
@@ -600,6 +609,33 @@ public class MavenDependencyUpdateTrigger
             LOGGER.info( "ignore error parsing maven args " + e.getMessage());
             return null;
         }
+    }
+    
+    private Maven.MavenInstallation getMavenInstallation(){
+
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            for ( Builder b : fp.getBuilders() )
+            {
+                if ( b instanceof Maven )
+                {
+                  return ((Maven)b).getMaven();
+                }
+            }
+            // null so return first found
+            for( Maven.MavenInstallation i : MavenModuleSet.DESCRIPTOR.getMavenDescriptor().getInstallations() ) {
+                return i;
+            }
+            return null;            
+        }
+        
+        if ( this.job instanceof MavenModuleSet )
+        {
+           return ((MavenModuleSet)this.job).getMaven();  
+        }
+        // ouch :-)
+        return null;
     }
 
 }

@@ -86,7 +86,10 @@ public class SnapshotTransfertListener
                     && !StringUtils.endsWith( file.getName(), ".xml" );
                 if ( isArtifact )
                 {
-                    LOGGER.info( "download " + file.getName() );
+                    if (MavenDependencyUpdateTrigger.debug)
+                    {
+                        LOGGER.info( "download " + file.getName() );
+                    }
                     snapshots.add( file.getName() );
                     snapshotDownloaded = true;
                 }

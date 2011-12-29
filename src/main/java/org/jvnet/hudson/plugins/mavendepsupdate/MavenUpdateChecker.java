@@ -22,6 +22,7 @@ package org.jvnet.hudson.plugins.mavendepsupdate;
 
 import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
+import hudson.maven.ReactorReader;
 import hudson.remoting.Callable;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +75,6 @@ import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.Maven3Utils;
-import org.jvnet.hudson.plugins.mavendepsupdate.util.ReactorReader;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.SnapshotTransfertListener;
 import org.sonatype.aether.repository.LocalRepository;
 import org.sonatype.aether.repository.RepositoryPolicy;
@@ -90,7 +91,7 @@ public class MavenUpdateChecker
 
     private static final Logger LOGGER = Logger.getLogger( MavenUpdateChecker.class.getName() );
 
-    private final FilePath mavenShadedJarPath;
+    //private final FilePath mavenShadedJarPath;
 
     private final String rootPomPath;
 
@@ -126,7 +127,7 @@ public class MavenUpdateChecker
     public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
                                boolean checkPlugins, String projectWorkspace, boolean masterRun, String mavenHome )
     {
-        this.mavenShadedJarPath = mavenShadedJarPath;
+        //this.mavenShadedJarPath = mavenShadedJarPath;
         this.rootPomPath = rootPomPath;
         this.localRepoPath = localRepoPath;
         this.checkPlugins = checkPlugins;
@@ -282,10 +283,10 @@ public class MavenUpdateChecker
             .getContextClassLoader() );
         // parent first as hudson classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
-        String mavenShadedJarPathStr = mavenShadedJarPath.getRemote();//.toURI().toURL().getFile();
-        mavenUpdateCheckerResult.addDebugLine( "add mavenShadedJarPathStr " + mavenShadedJarPathStr );
+        //String mavenShadedJarPathStr = mavenShadedJarPath.getRemote();//.toURI().toURL().getFile();
+        //mavenUpdateCheckerResult.addDebugLine( "add mavenShadedJarPathStr " + mavenShadedJarPathStr );
         List<File> jarFiles = new ArrayList<File>( 1 );
-        jarFiles.add( new File( mavenShadedJarPathStr ) );
+        //jarFiles.add( new File( mavenShadedJarPathStr ) );
         pluginFirstClassLoader.addPathFiles( jarFiles );
 
         mavenUpdateCheckerResult.addDebugLine( "pluginFirstClassLoader end" );
@@ -301,6 +302,8 @@ public class MavenUpdateChecker
 
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
+        request.setWorkspaceReader( new ReactorReader( new HashMap<String,MavenProject>(0), new File( projectWorkspace ) ) );
+        
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 
         RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );

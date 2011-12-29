@@ -44,6 +44,7 @@ public class MavenDependencyUpdateTriggerComputerListener extends ComputerListen
     public void preOnline( Computer c, Channel channel, FilePath root, TaskListener listener )
         throws IOException, InterruptedException
     {
+        /*
         PrintStream logger = listener.getLogger();
         logger.println( "copy jars for MavenDependencyUpdateTrigger" );
         File mavenShadedJar = new File( Hudson.getInstance().getRootDir(),
@@ -58,6 +59,7 @@ public class MavenDependencyUpdateTriggerComputerListener extends ComputerListen
         {
             logger.println("mavenShadedJar not found ");
         }
+        */
     }
 
 }

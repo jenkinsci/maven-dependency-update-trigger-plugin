@@ -35,6 +35,7 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 import org.apache.maven.plugin.MavenPluginManager;
 import org.apache.maven.project.DefaultDependencyResolutionRequest;
+import org.apache.maven.project.DependencyResolutionException;
 import org.apache.maven.project.DependencyResolutionResult;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
@@ -115,13 +116,14 @@ public class MavenUpdateChecker
 
     private List<String> activeProfiles = new ArrayList<String>();
 
+    private String jdkHome;
 
     private MavenUpdateCheckerResult mavenUpdateCheckerResult = new MavenUpdateCheckerResult();
 
     private String mavenHome;
 
-    public MavenUpdateChecker( String rootPomPath, String localRepoPath,
-                               boolean checkPlugins, String projectWorkspace, boolean masterRun, String mavenHome )
+    public MavenUpdateChecker( String rootPomPath, String localRepoPath, boolean checkPlugins, String projectWorkspace,
+                               boolean masterRun, String mavenHome, String jdkHome )
     {
         this.rootPomPath = rootPomPath;
         this.localRepoPath = localRepoPath;
@@ -129,6 +131,7 @@ public class MavenUpdateChecker
         this.projectWorkspace = projectWorkspace;
         this.masterRun = masterRun;
         this.mavenHome = mavenHome;
+        this.jdkHome = jdkHome;
     }
 
     public MavenUpdateCheckerResult call()
@@ -160,6 +163,8 @@ public class MavenUpdateChecker
 
             // FIXME load userProperties from the job
             Properties userProperties = this.userProperties == null ? new Properties() : this.userProperties;
+
+            userProperties.put( "java.home", jdkHome );
 
             ProjectBuildingRequest projectBuildingRequest =
                 getProjectBuildingRequest( userProperties, plexusContainer );
@@ -208,9 +213,19 @@ public class MavenUpdateChecker
                 DefaultDependencyResolutionRequest dependencyResolutionRequest =
                     new DefaultDependencyResolutionRequest( mavenProject, mavenRepositorySystemSession );
 
-                DependencyResolutionResult dependencyResolutionResult =
-                    projectDependenciesResolver.resolve( dependencyResolutionRequest );
-
+                try
+                {
+                    DependencyResolutionResult dependencyResolutionResult =
+                        projectDependenciesResolver.resolve( dependencyResolutionRequest );
+                }
+                catch ( DependencyResolutionException e )
+                {
+                    mavenUpdateCheckerResult.addDebugLine( e.getMessage() );
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter( sw );
+                    e.printStackTrace( pw );
+                    mavenUpdateCheckerResult.addDebugLine( "skip:" + sw.toString() );
+                }
                 if ( checkPlugins )
                 {
                     for ( Plugin plugin : mavenProject.getBuildPlugins() )
@@ -240,7 +255,7 @@ public class MavenUpdateChecker
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter( sw );
             e.printStackTrace( pw );
-            mavenUpdateCheckerResult.addDebugLine( sw.toString() );
+            mavenUpdateCheckerResult.addDebugLine( "skip:" + sw.toString() );
         }
         finally
         {
@@ -293,8 +308,7 @@ public class MavenUpdateChecker
 
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
-        request.setWorkspaceReader(
-            new ReactorReader( new HashMap<String, MavenProject>( 0 ) ) );
+        request.setWorkspaceReader( new ReactorReader( new HashMap<String, MavenProject>( 0 ) ) );
 
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 

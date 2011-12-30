@@ -32,6 +32,7 @@ import hudson.model.Cause;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
 import hudson.model.Item;
+import hudson.model.JDK;
 import hudson.model.Node;
 import hudson.model.TopLevelItem;
 import hudson.remoting.VirtualChannel;
@@ -111,7 +112,6 @@ public class MavenDependencyUpdateTrigger
             PluginWrapper pluginWrapper =
                 Hudson.getInstance().getPluginManager().getPlugin( "maven-dependency-update-trigger" );
 
-
             boolean isMaster = node == Hudson.getInstance();
 
             AbstractProject<?, ?> abstractProject = (AbstractProject<?, ?>) super.job;
@@ -133,9 +133,26 @@ public class MavenDependencyUpdateTrigger
 
             String mavenHome = mavenInstallation.getHomeDir().getPath();
 
+            String jdkHome = "";
+
+            JDK jdk = getJDK();
+
+            if ( jdk != null )
+            {
+
+                jdk = jdk.forNode( node, null );
+
+                jdkHome = jdk == null ? "" : jdk.getHome();
+
+            }
+
+            if ( MavenDependencyUpdateTrigger.debug )
+            {
+                LOGGER.info( "MavenUpdateChecker with jdkHome:" + jdkHome );
+            }
             MavenUpdateChecker checker =
-                new MavenUpdateChecker( rootPomPath, localRepoPath, this.checkPlugins, projectWorkspace,
-                                        isMaster, mavenHome );
+                new MavenUpdateChecker( rootPomPath, localRepoPath, this.checkPlugins, projectWorkspace, isMaster,
+                                        mavenHome, jdkHome );
             if ( isMaster )
             {
                 checker.setClassLoaderParent( (PluginFirstClassLoader) pluginWrapper.classLoader );
@@ -623,6 +640,22 @@ public class MavenDependencyUpdateTrigger
         if ( this.job instanceof MavenModuleSet )
         {
             return ( (MavenModuleSet) this.job ).getMaven();
+        }
+        // ouch :-)
+        return null;
+    }
+
+    private JDK getJDK()
+    {
+        if ( this.job instanceof FreeStyleProject )
+        {
+            FreeStyleProject fp = (FreeStyleProject) this.job;
+            return fp.getJDK();
+        }
+
+        if ( this.job instanceof MavenModuleSet )
+        {
+            return ( (MavenModuleSet) this.job ).getJDK();
         }
         // ouch :-)
         return null;

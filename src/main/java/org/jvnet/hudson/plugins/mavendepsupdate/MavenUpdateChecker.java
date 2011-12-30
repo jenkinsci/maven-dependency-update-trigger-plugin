@@ -120,7 +120,7 @@ public class MavenUpdateChecker
 
     private String mavenHome;
 
-    public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
+    public MavenUpdateChecker( String rootPomPath, String localRepoPath,
                                boolean checkPlugins, String projectWorkspace, boolean masterRun, String mavenHome )
     {
         this.rootPomPath = rootPomPath;
@@ -236,8 +236,6 @@ public class MavenUpdateChecker
         }
         catch ( Exception e )
         {
-            //throw new IOException2( e.getMessage(), e );
-
             mavenUpdateCheckerResult.addDebugLine( e.getMessage() );
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter( sw );
@@ -278,7 +276,7 @@ public class MavenUpdateChecker
         PluginFirstClassLoader pluginFirstClassLoader = new PluginFirstClassLoader();
         pluginFirstClassLoader.setParent(
             this.masterRun ? this.classLoaderParent : Thread.currentThread().getContextClassLoader() );
-        // parent first as hudson classes must be loaded first in a remote env
+        // parent first as jenkins classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
         pluginFirstClassLoader.addPathFiles( new ArrayList<File>( 0 ) );
 
@@ -296,7 +294,7 @@ public class MavenUpdateChecker
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
         request.setWorkspaceReader(
-            new ReactorReader( new HashMap<String, MavenProject>( 0 ) ) );//, new File( projectWorkspace ) ) );
+            new ReactorReader( new HashMap<String, MavenProject>( 0 ) ) );
 
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 

@@ -111,16 +111,8 @@ public class MavenDependencyUpdateTrigger
             PluginWrapper pluginWrapper =
                 Hudson.getInstance().getPluginManager().getPlugin( "maven-dependency-update-trigger" );
 
-            FilePath mavenShadedJar =
-                node.getRootPath().child( MavenDependencyUpdateTriggerComputerListener.MAVEN_SHADED_JAR_NAME + ".jar" );
 
             boolean isMaster = node == Hudson.getInstance();
-
-            if ( isMaster )
-            {
-                mavenShadedJar = node.getRootPath().child( "plugins" ).child( "maven-dependency-update-trigger" ).child(
-                    MavenDependencyUpdateTriggerComputerListener.MAVEN_SHADED_JAR_NAME + ".jar" );
-            }
 
             AbstractProject<?, ?> abstractProject = (AbstractProject<?, ?>) super.job;
 
@@ -142,7 +134,7 @@ public class MavenDependencyUpdateTrigger
             String mavenHome = mavenInstallation.getHomeDir().getPath();
 
             MavenUpdateChecker checker =
-                new MavenUpdateChecker( mavenShadedJar, rootPomPath, localRepoPath, this.checkPlugins, projectWorkspace,
+                new MavenUpdateChecker( rootPomPath, localRepoPath, this.checkPlugins, projectWorkspace,
                                         isMaster, mavenHome );
             if ( isMaster )
             {

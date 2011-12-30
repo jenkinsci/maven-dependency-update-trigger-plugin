@@ -145,7 +145,7 @@ public class MavenUpdateChecker
             PluginFirstClassLoader pluginFirstClassLoader = getPluginFirstClassLoader();
             Thread.currentThread().setContextClassLoader( pluginFirstClassLoader );
             String classLoaderName = getClass().getClassLoader().toString();
-            System.out.println( "class loader " + classLoaderName );
+
             mavenUpdateCheckerResult.addDebugLine( classLoaderName );
             PlexusContainer plexusContainer = getPlexusContainer( pluginFirstClassLoader );
 
@@ -293,7 +293,7 @@ public class MavenUpdateChecker
             this.masterRun ? this.classLoaderParent : Thread.currentThread().getContextClassLoader() );
         // parent first as jenkins classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
-        pluginFirstClassLoader.addPathFiles( new ArrayList<File>( 0 ) );
+        //pluginFirstClassLoader.addPathFiles( new ArrayList<File>( 0 ) );
 
         mavenUpdateCheckerResult.addDebugLine( "pluginFirstClassLoader end" );
         return pluginFirstClassLoader;

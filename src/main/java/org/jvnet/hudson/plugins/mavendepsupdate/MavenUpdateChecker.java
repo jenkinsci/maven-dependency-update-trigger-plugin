@@ -22,7 +22,6 @@ package org.jvnet.hudson.plugins.mavendepsupdate;
 
 import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
-import hudson.maven.ReactorReader;
 import hudson.remoting.Callable;
 
 import java.io.File;
@@ -75,6 +74,7 @@ import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.Maven3Utils;
+import org.jvnet.hudson.plugins.mavendepsupdate.util.ReactorReader;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.SnapshotTransfertListener;
 import org.sonatype.aether.repository.LocalRepository;
 import org.sonatype.aether.repository.RepositoryPolicy;
@@ -127,7 +127,6 @@ public class MavenUpdateChecker
     public MavenUpdateChecker( FilePath mavenShadedJarPath, String rootPomPath, String localRepoPath,
                                boolean checkPlugins, String projectWorkspace, boolean masterRun, String mavenHome )
     {
-        //this.mavenShadedJarPath = mavenShadedJarPath;
         this.rootPomPath = rootPomPath;
         this.localRepoPath = localRepoPath;
         this.checkPlugins = checkPlugins;
@@ -193,20 +192,23 @@ public class MavenUpdateChecker
             // due to artifact not found
 
             final Map<String, MavenProject> projectMap = getProjectMap( mavenProjects );
-            WorkspaceReader reactorRepository = new ReactorReader( projectMap, new File( projectWorkspace ) );
+            WorkspaceReader reactorRepository = new ReactorReader( projectMap );
 
             MavenRepositorySystemSession mavenRepositorySystemSession = (MavenRepositorySystemSession) projectBuildingRequest
                 .getRepositorySession();
 
             mavenRepositorySystemSession.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
-            mavenRepositorySystemSession.setWorkspaceReader( ChainedWorkspaceReader
-                .newInstance( reactorRepository, projectBuildingRequest.getRepositorySession().getWorkspaceReader() ) );
+
+
+            mavenRepositorySystemSession.setWorkspaceReader( reactorRepository );
 
             MavenPluginManager mavenPluginManager = plexusContainer.lookup( MavenPluginManager.class );
 
             for ( MavenProject mavenProject : projectSorter.getSortedProjects() )
             {
                 LOGGER.info( "resolve dependencies for project " + mavenProject.getId() );
+
+
                 DefaultDependencyResolutionRequest dependencyResolutionRequest = new DefaultDependencyResolutionRequest(
                                                                                                                          mavenProject,
                                                                                                                          mavenRepositorySystemSession );
@@ -283,11 +285,7 @@ public class MavenUpdateChecker
             .getContextClassLoader() );
         // parent first as hudson classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
-        //String mavenShadedJarPathStr = mavenShadedJarPath.getRemote();//.toURI().toURL().getFile();
-        //mavenUpdateCheckerResult.addDebugLine( "add mavenShadedJarPathStr " + mavenShadedJarPathStr );
-        List<File> jarFiles = new ArrayList<File>( 1 );
-        //jarFiles.add( new File( mavenShadedJarPathStr ) );
-        pluginFirstClassLoader.addPathFiles( jarFiles );
+        pluginFirstClassLoader.addPathFiles( new ArrayList<File>( 0 ) );
 
         mavenUpdateCheckerResult.addDebugLine( "pluginFirstClassLoader end" );
         return pluginFirstClassLoader;
@@ -302,14 +300,14 @@ public class MavenUpdateChecker
 
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
-        request.setWorkspaceReader( new ReactorReader( new HashMap<String,MavenProject>(0), new File( projectWorkspace ) ) );
+        request.setWorkspaceReader( new ReactorReader( new HashMap<String,MavenProject>(0) ));//, new File( projectWorkspace ) ) );
         
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 
         RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );
 
-        org.sonatype.aether.RepositorySystem repoSystem = plexusContainer
-            .lookup( org.sonatype.aether.RepositorySystem.class );
+        org.sonatype.aether.RepositorySystem repoSystem =
+            plexusContainer.lookup( org.sonatype.aether.RepositorySystem.class );
 
         SettingsBuildingRequest settingsRequest = new DefaultSettingsBuildingRequest();
 

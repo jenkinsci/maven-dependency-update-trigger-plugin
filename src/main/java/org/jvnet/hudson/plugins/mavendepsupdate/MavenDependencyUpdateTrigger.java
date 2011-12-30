@@ -19,22 +19,21 @@
  */
 package org.jvnet.hudson.plugins.mavendepsupdate;
 
-import static hudson.Util.fixNull;
+import antlr.ANTLRException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
 import hudson.PluginWrapper;
 import hudson.Util;
 import hudson.maven.MavenModuleSet;
-import hudson.maven.MavenModuleSetBuild;
-import hudson.model.BuildableItem;
-import hudson.model.Item;
-import hudson.model.TopLevelItem;
 import hudson.model.AbstractProject;
+import hudson.model.BuildableItem;
 import hudson.model.Cause;
 import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
+import hudson.model.Item;
 import hudson.model.Node;
+import hudson.model.TopLevelItem;
 import hudson.remoting.VirtualChannel;
 import hudson.scheduler.CronTabList;
 import hudson.tasks.Builder;
@@ -42,6 +41,15 @@ import hudson.tasks.Maven;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.SystemUtils;
+import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.cli.CLIManager;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -56,19 +64,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.SystemUtils;
-import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.cli.CLIManager;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.repository.RepositorySystem;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
-import antlr.ANTLRException;
+import static hudson.Util.fixNull;
 
 /**
  * @author Olivier Lamy
@@ -80,10 +76,10 @@ public class MavenDependencyUpdateTrigger
     private static final Logger LOGGER = Logger.getLogger( MavenDependencyUpdateTrigger.class.getName() );
 
     private final boolean checkPlugins;
-    
+
     public static boolean debug = Boolean.getBoolean( "MavenDependencyUpdateTrigger.debug" );
-    
-    private static final CLIManager mavenCliManager = new CLIManager();  
+
+    private static final CLIManager mavenCliManager = new CLIManager();
 
     @DataBoundConstructor
     public MavenDependencyUpdateTrigger( String cron_value, boolean checkPlugins )
@@ -112,18 +108,18 @@ public class MavenDependencyUpdateTrigger
         ClassLoader origClassLoader = Thread.currentThread().getContextClassLoader();
         try
         {
-            PluginWrapper pluginWrapper = Hudson.getInstance().getPluginManager()
-                .getPlugin( "maven-dependency-update-trigger" );
+            PluginWrapper pluginWrapper =
+                Hudson.getInstance().getPluginManager().getPlugin( "maven-dependency-update-trigger" );
 
-            FilePath mavenShadedJar = node.getRootPath()
-                .child( MavenDependencyUpdateTriggerComputerListener.MAVEN_SHADED_JAR_NAME + ".jar" );
+            FilePath mavenShadedJar =
+                node.getRootPath().child( MavenDependencyUpdateTriggerComputerListener.MAVEN_SHADED_JAR_NAME + ".jar" );
 
             boolean isMaster = node == Hudson.getInstance();
 
             if ( isMaster )
             {
-                mavenShadedJar = node.getRootPath().child( "plugins" ).child( "maven-dependency-update-trigger" )
-                    .child( MavenDependencyUpdateTriggerComputerListener.MAVEN_SHADED_JAR_NAME + ".jar" );
+                mavenShadedJar = node.getRootPath().child( "plugins" ).child( "maven-dependency-update-trigger" ).child(
+                    MavenDependencyUpdateTriggerComputerListener.MAVEN_SHADED_JAR_NAME + ".jar" );
             }
 
             AbstractProject<?, ?> abstractProject = (AbstractProject<?, ?>) super.job;
@@ -132,8 +128,6 @@ public class MavenDependencyUpdateTrigger
 
             FilePath moduleRoot = abstractProject.getScm().getModuleRoot( workspace );
 
-
-            
             String rootPomPath = moduleRoot.getRemote() + "/" + getRootPomPath();
 
             File localRepoFile = getLocalRepo( workspace );
@@ -142,37 +136,39 @@ public class MavenDependencyUpdateTrigger
             String projectWorkspace = moduleRoot.getRemote();
 
             Maven.MavenInstallation mavenInstallation = getMavenInstallation();
-            
-            mavenInstallation =  mavenInstallation.forNode( node, null );
-            
+
+            mavenInstallation = mavenInstallation.forNode( node, null );
+
             String mavenHome = mavenInstallation.getHomeDir().getPath();
 
-            MavenUpdateChecker checker = new MavenUpdateChecker( mavenShadedJar, rootPomPath, localRepoPath,
-                                                                 this.checkPlugins, projectWorkspace, isMaster, mavenHome );
+            MavenUpdateChecker checker =
+                new MavenUpdateChecker( mavenShadedJar, rootPomPath, localRepoPath, this.checkPlugins, projectWorkspace,
+                                        isMaster, mavenHome );
             if ( isMaster )
             {
                 checker.setClassLoaderParent( (PluginFirstClassLoader) pluginWrapper.classLoader );
             }
-            
+
             VirtualChannel virtualChannel = node.getChannel();
-            FilePath alternateSettings = getAlternateSettings(virtualChannel);
+            FilePath alternateSettings = getAlternateSettings( virtualChannel );
             checker.setAlternateSettings( alternateSettings );
-            
-            FilePath globalSettings = getGlobalSettings(virtualChannel);
+
+            FilePath globalSettings = getGlobalSettings( virtualChannel );
             checker.setGlobalSettings( globalSettings );
 
             checker.setUserProperties( getUserProperties() );
-            
+
             checker.setActiveProfiles( getActiveProfiles() );
-            
+
             LOGGER.info( "run MavenUpdateChecker for project " + job.getName() + " on node " + node.getDisplayName() );
 
             MavenUpdateCheckerResult mavenUpdateCheckerResult = virtualChannel.call( checker );
 
             if ( debug )
             {
-                StringBuilder debugLines = new StringBuilder( "MavenUpdateChecker for project " + job.getName()
-                    + " on node " + node.getDisplayName() ).append( SystemUtils.LINE_SEPARATOR );
+                StringBuilder debugLines = new StringBuilder(
+                    "MavenUpdateChecker for project " + job.getName() + " on node " + node.getDisplayName() ).append(
+                    SystemUtils.LINE_SEPARATOR );
                 for ( String line : mavenUpdateCheckerResult.getDebugLines() )
                 {
                     debugLines.append( line ).append( SystemUtils.LINE_SEPARATOR );
@@ -182,23 +178,23 @@ public class MavenDependencyUpdateTrigger
 
             if ( mavenUpdateCheckerResult.getFileUpdatedNames().size() > 0 )
             {
-                StringBuilder stringBuilder = new StringBuilder( "MavenUpdateChecker for project " + job.getName()
-                    + " on node " + node.getDisplayName() );
-                stringBuilder.append( " , snapshotDownloaded so triggering a new build : " )
-                    .append( SystemUtils.LINE_SEPARATOR );
+                StringBuilder stringBuilder = new StringBuilder(
+                    "MavenUpdateChecker for project " + job.getName() + " on node " + node.getDisplayName() );
+                stringBuilder.append( " , snapshotDownloaded so triggering a new build : " ).append(
+                    SystemUtils.LINE_SEPARATOR );
                 for ( String fileName : mavenUpdateCheckerResult.getFileUpdatedNames() )
                 {
                     stringBuilder.append( " * " + fileName ).append( SystemUtils.LINE_SEPARATOR );
                 }
-                job.scheduleBuild( 0,
-                                   new MavenDependencyUpdateTriggerCause( mavenUpdateCheckerResult
-                                       .getFileUpdatedNames() ) );
+                job.scheduleBuild( 0, new MavenDependencyUpdateTriggerCause(
+                    mavenUpdateCheckerResult.getFileUpdatedNames() ) );
                 LOGGER.info( stringBuilder.toString() );
             }
 
             long end = System.currentTimeMillis();
-            LOGGER.info( "time to run MavenUpdateChecker for project " + job.getName() + " on node "
-                + node.getDisplayName() + " : " + ( end - start ) + " ms" );
+            LOGGER.info(
+                "time to run MavenUpdateChecker for project " + job.getName() + " on node " + node.getDisplayName()
+                    + " : " + ( end - start ) + " ms" );
         }
         catch ( Exception e )
         {
@@ -249,7 +245,9 @@ public class MavenDependencyUpdateTrigger
             {
                 String msg = CronTabList.create( fixNull( value ) ).checkSanity();
                 if ( msg != null )
+                {
                     return FormValidation.warning( msg );
+                }
                 return FormValidation.ok();
             }
             catch ( ANTLRException e )
@@ -360,8 +358,8 @@ public class MavenDependencyUpdateTrigger
 
         return index;
     }
-    
-    private FilePath getAlternateSettings(VirtualChannel virtualChannel)
+
+    private FilePath getAlternateSettings( VirtualChannel virtualChannel )
     {
         //-s,--settings or from configuration for maven native project
         // check if FreeStyleProject
@@ -387,7 +385,7 @@ public class MavenDependencyUpdateTrigger
             }
             return null;
         }
-        
+
         // check if there is a method called getAlternateSettings
         try
         {
@@ -414,14 +412,12 @@ public class MavenDependencyUpdateTrigger
         catch ( InvocationTargetException e )
         {
             LOGGER.warning( "ignore " + e.getMessage() );
-        } 
-        
-        
-        
+        }
+
         return null;
     }
-    
-    private FilePath getGlobalSettings(VirtualChannel virtualChannel)
+
+    private FilePath getGlobalSettings( VirtualChannel virtualChannel )
     {
         //-gs,--global-settings
         if ( this.job instanceof FreeStyleProject )
@@ -440,7 +436,8 @@ public class MavenDependencyUpdateTrigger
                     CommandLine cli = getCommandLine( args );
                     if ( cli != null && cli.hasOption( CLIManager.ALTERNATE_GLOBAL_SETTINGS ) )
                     {
-                        return new FilePath( virtualChannel, cli.getOptionValue( CLIManager.ALTERNATE_GLOBAL_SETTINGS ) );
+                        return new FilePath( virtualChannel,
+                                             cli.getOptionValue( CLIManager.ALTERNATE_GLOBAL_SETTINGS ) );
                     }
                 }
             }
@@ -448,8 +445,9 @@ public class MavenDependencyUpdateTrigger
         }
         return null;
     }
-    
-    private Properties getUserProperties() throws IOException
+
+    private Properties getUserProperties()
+        throws IOException
     {
         if ( this.job instanceof FreeStyleProject )
         {
@@ -465,16 +463,18 @@ public class MavenDependencyUpdateTrigger
         }
         return new Properties();
     }
-    
-    private Properties load(String properties) throws IOException {
+
+    private Properties load( String properties )
+        throws IOException
+    {
         Properties p = new Properties();
-        p.load(new ByteArrayInputStream(properties.getBytes()));
+        p.load( new ByteArrayInputStream( properties.getBytes() ) );
         return p;
     }
-    
+
     private String getRootPomPath()
     {
-        
+
         if ( this.job instanceof FreeStyleProject )
         {
             FreeStyleProject fp = (FreeStyleProject) this.job;
@@ -484,21 +484,21 @@ public class MavenDependencyUpdateTrigger
                 {
                     String targets = ( (Maven) b ).getTargets();
                     String[] args = Util.tokenize( targets );
-                    
-                    if ( args == null  )
+
+                    if ( args == null )
                     {
                         return null;
                     }
                     CommandLine cli = getCommandLine( args );
-                    if (cli != null && cli.hasOption( CLIManager.ALTERNATE_POM_FILE ))
+                    if ( cli != null && cli.hasOption( CLIManager.ALTERNATE_POM_FILE ) )
                     {
                         return cli.getOptionValue( CLIManager.ALTERNATE_POM_FILE );
                     }
                 }
             }
             return null;
-        }        
-        
+        }
+
         // check if there is a method called getRootPOM
         try
         {
@@ -525,12 +525,12 @@ public class MavenDependencyUpdateTrigger
         catch ( InvocationTargetException e )
         {
             LOGGER.warning( "ignore " + e.getMessage() );
-        }        
-        
+        }
+
         return "pom.xml";
     }
-    
-    private List<String>  getActiveProfiles()
+
+    private List<String> getActiveProfiles()
     {
         if ( this.job instanceof FreeStyleProject )
         {
@@ -541,13 +541,13 @@ public class MavenDependencyUpdateTrigger
                 {
                     String targets = ( (Maven) b ).getTargets();
                     String[] args = Util.tokenize( targets );
-                    
-                    if ( args == null  )
+
+                    if ( args == null )
                     {
                         return null;
                     }
                     CommandLine cli = getCommandLine( args );
-                    if (cli != null && cli.hasOption( CLIManager.ACTIVATE_PROFILES ))
+                    if ( cli != null && cli.hasOption( CLIManager.ACTIVATE_PROFILES ) )
                     {
                         return Arrays.asList( cli.getOptionValues( CLIManager.ACTIVATE_PROFILES ) );
                     }
@@ -561,15 +561,15 @@ public class MavenDependencyUpdateTrigger
             Method method = this.job.getClass().getMethod( "getGoals", null );
             String goals = (String) method.invoke( this.job, null );
             String[] args = Util.tokenize( goals );
-            if ( args == null  )
+            if ( args == null )
             {
                 return null;
             }
             CommandLine cli = getCommandLine( args );
-            if (cli != null && cli.hasOption( CLIManager.ACTIVATE_PROFILES ))
+            if ( cli != null && cli.hasOption( CLIManager.ACTIVATE_PROFILES ) )
             {
                 return Arrays.asList( cli.getOptionValues( CLIManager.ACTIVATE_PROFILES ) );
-            }            
+            }
         }
         catch ( SecurityException e )
         {
@@ -593,8 +593,8 @@ public class MavenDependencyUpdateTrigger
         }
         return Collections.emptyList();
     }
-    
-    private CommandLine getCommandLine(String[] args)
+
+    private CommandLine getCommandLine( String[] args )
     {
         try
         {
@@ -602,12 +602,13 @@ public class MavenDependencyUpdateTrigger
         }
         catch ( ParseException e )
         {
-            LOGGER.info( "ignore error parsing maven args " + e.getMessage());
+            LOGGER.info( "ignore error parsing maven args " + e.getMessage() );
             return null;
         }
     }
-    
-    private Maven.MavenInstallation getMavenInstallation(){
+
+    private Maven.MavenInstallation getMavenInstallation()
+    {
 
         if ( this.job instanceof FreeStyleProject )
         {
@@ -616,19 +617,20 @@ public class MavenDependencyUpdateTrigger
             {
                 if ( b instanceof Maven )
                 {
-                  return ((Maven)b).getMaven();
+                    return ( (Maven) b ).getMaven();
                 }
             }
             // null so return first found
-            for( Maven.MavenInstallation i : MavenModuleSet.DESCRIPTOR.getMavenDescriptor().getInstallations() ) {
+            for ( Maven.MavenInstallation i : MavenModuleSet.DESCRIPTOR.getMavenDescriptor().getInstallations() )
+            {
                 return i;
             }
-            return null;            
+            return null;
         }
-        
+
         if ( this.job instanceof MavenModuleSet )
         {
-           return ((MavenModuleSet)this.job).getMaven();  
+            return ( (MavenModuleSet) this.job ).getMaven();
         }
         // ouch :-)
         return null;

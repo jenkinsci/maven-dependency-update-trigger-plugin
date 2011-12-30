@@ -21,16 +21,15 @@
 package org.jvnet.hudson.plugins.mavendepsupdate.util;
 
 import hudson.PluginFirstClassLoader;
-
-import java.net.URL;
-import java.util.logging.Logger;
-
 import org.codehaus.plexus.DefaultContainerConfiguration;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
+
+import java.net.URL;
+import java.util.logging.Logger;
 
 /**
  * @author Olivier Lamy
@@ -39,9 +38,10 @@ import org.codehaus.plexus.classworlds.realm.ClassRealm;
 public class Maven3Utils
 {
     private static final Logger LOGGER = Logger.getLogger( Maven3Utils.class.getName() );
-    
+
     /**
      * will build a PlexusContainer from {@link PluginFirstClassLoader}
+     *
      * @param pluginFirstClassLoader
      * @return
      * @throws PlexusContainerException
@@ -68,5 +68,5 @@ public class Maven3Utils
         }
         return classRealm;
     }
-    
+
 }

@@ -27,14 +27,15 @@ import java.util.List;
  * @author Olivier Lamy
  * @since 1.1
  */
-public class MavenUpdateCheckerResult implements Serializable
+public class MavenUpdateCheckerResult
+    implements Serializable
 {
 
     private List<String> fileUpdatedNames = new ArrayList<String>();
-    
+
     private List<String> debugLines = new ArrayList<String>();
-    
-    public MavenUpdateCheckerResult ()
+
+    public MavenUpdateCheckerResult()
     {
         // no op
     }
@@ -48,17 +49,17 @@ public class MavenUpdateCheckerResult implements Serializable
     {
         this.fileUpdatedNames.add( fileUpdatedName );
     }
-    
+
     public void addFilesUpdatedNames( List<String> filesUpdatedNames )
     {
         this.fileUpdatedNames.addAll( filesUpdatedNames );
-    }    
+    }
 
     public List<String> getDebugLines()
     {
         return debugLines;
     }
-  
+
     public void addDebugLine( String debugLine )
     {
         this.debugLines.add( debugLine );

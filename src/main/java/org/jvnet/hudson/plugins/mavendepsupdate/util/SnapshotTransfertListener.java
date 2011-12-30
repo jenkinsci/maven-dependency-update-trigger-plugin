@@ -19,20 +19,21 @@
  */
 package org.jvnet.hudson.plugins.mavendepsupdate.util;
 
-import java.io.File;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
 import org.apache.commons.lang.StringUtils;
 import org.jvnet.hudson.plugins.mavendepsupdate.MavenDependencyUpdateTrigger;
 import org.sonatype.aether.transfer.TransferCancelledException;
 import org.sonatype.aether.transfer.TransferEvent;
 import org.sonatype.aether.transfer.TransferListener;
 
+import java.io.File;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
 /**
  * NOTE : <b>this class is not designed for external use so it can change without any prior notice</b>
+ *
  * @author Olivier Lamy
  * @since 1.1
  */
@@ -42,7 +43,7 @@ public class SnapshotTransfertListener
     private static final Logger LOGGER = Logger.getLogger( SnapshotTransfertListener.class.getName() );
 
     private boolean snapshotDownloaded = false;
-    
+
     private List<String> snapshots = new ArrayList<String>();
 
     public void transferCorrupted( TransferEvent transferEvent )
@@ -82,11 +83,12 @@ public class SnapshotTransfertListener
             if ( file != null && transferEvent.getResource().getResourceName().contains( "SNAPSHOT" ) )
             {
                 // filtering on maven metadata
-                boolean isArtifact = !StringUtils.contains( file.getName(), "maven-metadata" )
-                    && !StringUtils.endsWith( file.getName(), ".xml" );
+                boolean isArtifact =
+                    !StringUtils.contains( file.getName(), "maven-metadata" ) && !StringUtils.endsWith( file.getName(),
+                                                                                                        ".xml" );
                 if ( isArtifact )
                 {
-                    if (MavenDependencyUpdateTrigger.debug)
+                    if ( MavenDependencyUpdateTrigger.debug )
                     {
                         LOGGER.info( "download " + file.getName() );
                     }
@@ -95,7 +97,7 @@ public class SnapshotTransfertListener
                 }
                 else
                 {
-                    if (MavenDependencyUpdateTrigger.debug)
+                    if ( MavenDependencyUpdateTrigger.debug )
                     {
                         LOGGER.info( "ignore file " + file.getName() );
                     }

@@ -21,22 +21,20 @@ package org.jvnet.hudson.plugins.mavendepsupdate;
 
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.model.TaskListener;
 import hudson.model.Computer;
-import hudson.model.Hudson;
+import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 
 /**
  * @author Olivier Lamy
  * @since 1.1
  */
 @Extension
-public class MavenDependencyUpdateTriggerComputerListener extends ComputerListener
+public class MavenDependencyUpdateTriggerComputerListener
+    extends ComputerListener
 {
     public static final String MAVEN_SHADED_JAR_NAME = "maven-dependency-update-trigger-shaded-maven";
 

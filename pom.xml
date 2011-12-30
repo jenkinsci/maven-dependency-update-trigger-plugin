@@ -287,12 +287,6 @@
         <configuration>
           <pluginFirstClassLoader>true</pluginFirstClassLoader>
           <disabledTestInjection>true</disabledTestInjection>
-          <!--webResources>
-            <webResource>
-              <filtering>false</filtering>
-              <directory>./target/shaded-maven/</directory>
-            </webResource>
-          </webResources-->
         </configuration>
       </plugin>
       <plugin>

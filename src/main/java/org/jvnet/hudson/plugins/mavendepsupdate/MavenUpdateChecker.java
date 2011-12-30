@@ -23,22 +23,6 @@ package org.jvnet.hudson.plugins.mavendepsupdate;
 import hudson.FilePath;
 import hudson.PluginFirstClassLoader;
 import hudson.remoting.Callable;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Logger;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.artifact.InvalidRepositoryException;
@@ -58,7 +42,6 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.project.ProjectBuildingResult;
 import org.apache.maven.project.ProjectDependenciesResolver;
 import org.apache.maven.project.ProjectSorter;
-import org.apache.maven.repository.DelegatingLocalArtifactRepository;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.repository.internal.MavenRepositorySystemSession;
 import org.apache.maven.settings.building.DefaultSettingsBuildingRequest;
@@ -79,7 +62,21 @@ import org.jvnet.hudson.plugins.mavendepsupdate.util.SnapshotTransfertListener;
 import org.sonatype.aether.repository.LocalRepository;
 import org.sonatype.aether.repository.RepositoryPolicy;
 import org.sonatype.aether.repository.WorkspaceReader;
-import org.sonatype.aether.util.repository.ChainedWorkspaceReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Logger;
 
 /**
  * @author Olivier Lamy
@@ -102,7 +99,6 @@ public class MavenUpdateChecker
     private final String projectWorkspace;
 
     private final boolean masterRun;
-
 
     //---------------------------------------
     // optionnal parameters
@@ -152,19 +148,21 @@ public class MavenUpdateChecker
 
             Thread.currentThread().setContextClassLoader( plexusContainer.getContainerRealm() );
             mavenUpdateCheckerResult.addDebugLine( "ok for new DefaultPlexusContainer( conf ) " );
-            mavenUpdateCheckerResult.addDebugLine( "Thread.currentThread().getContextClassLoader() "
-                + Thread.currentThread().getContextClassLoader() );
-            mavenUpdateCheckerResult.addDebugLine( "Thread.currentThread().getContextClassLoader().parent "
-                + ( Thread.currentThread().getContextClassLoader().getParent() == null ? "null" : Thread
-                    .currentThread().getContextClassLoader().getParent().toString() ) );
-            mavenUpdateCheckerResult.addDebugLine( "classLoader  urls "
-                + Arrays.asList( plexusContainer.getContainerRealm().getURLs() ) );
+            mavenUpdateCheckerResult.addDebugLine(
+                "Thread.currentThread().getContextClassLoader() " + Thread.currentThread().getContextClassLoader() );
+            mavenUpdateCheckerResult.addDebugLine( "Thread.currentThread().getContextClassLoader().parent " + (
+                Thread.currentThread().getContextClassLoader().getParent() == null
+                    ? "null"
+                    : Thread.currentThread().getContextClassLoader().getParent().toString() ) );
+            mavenUpdateCheckerResult.addDebugLine(
+                "classLoader  urls " + Arrays.asList( plexusContainer.getContainerRealm().getURLs() ) );
             ProjectBuilder projectBuilder = plexusContainer.lookup( ProjectBuilder.class );
 
             // FIXME load userProperties from the job
             Properties userProperties = this.userProperties == null ? new Properties() : this.userProperties;
 
-            ProjectBuildingRequest projectBuildingRequest = getProjectBuildingRequest( userProperties, plexusContainer );
+            ProjectBuildingRequest projectBuildingRequest =
+                getProjectBuildingRequest( userProperties, plexusContainer );
 
             // check plugins too
             projectBuildingRequest.setProcessPlugins( true );
@@ -172,11 +170,11 @@ public class MavenUpdateChecker
 
             projectBuildingRequest.setResolveDependencies( true );
 
-            List<ProjectBuildingResult> projectBuildingResults = projectBuilder.build( Arrays
-                .asList( new File( rootPomPath ) ), true, projectBuildingRequest );
+            List<ProjectBuildingResult> projectBuildingResults =
+                projectBuilder.build( Arrays.asList( new File( rootPomPath ) ), true, projectBuildingRequest );
 
-            ProjectDependenciesResolver projectDependenciesResolver = plexusContainer
-                .lookup( ProjectDependenciesResolver.class );
+            ProjectDependenciesResolver projectDependenciesResolver =
+                plexusContainer.lookup( ProjectDependenciesResolver.class );
 
             List<MavenProject> mavenProjects = new ArrayList<MavenProject>( projectBuildingResults.size() );
 
@@ -194,11 +192,10 @@ public class MavenUpdateChecker
             final Map<String, MavenProject> projectMap = getProjectMap( mavenProjects );
             WorkspaceReader reactorRepository = new ReactorReader( projectMap );
 
-            MavenRepositorySystemSession mavenRepositorySystemSession = (MavenRepositorySystemSession) projectBuildingRequest
-                .getRepositorySession();
+            MavenRepositorySystemSession mavenRepositorySystemSession =
+                (MavenRepositorySystemSession) projectBuildingRequest.getRepositorySession();
 
             mavenRepositorySystemSession.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
-
 
             mavenRepositorySystemSession.setWorkspaceReader( reactorRepository );
 
@@ -208,13 +205,11 @@ public class MavenUpdateChecker
             {
                 LOGGER.info( "resolve dependencies for project " + mavenProject.getId() );
 
+                DefaultDependencyResolutionRequest dependencyResolutionRequest =
+                    new DefaultDependencyResolutionRequest( mavenProject, mavenRepositorySystemSession );
 
-                DefaultDependencyResolutionRequest dependencyResolutionRequest = new DefaultDependencyResolutionRequest(
-                                                                                                                         mavenProject,
-                                                                                                                         mavenRepositorySystemSession );
-
-                DependencyResolutionResult dependencyResolutionResult = projectDependenciesResolver
-                    .resolve( dependencyResolutionRequest );
+                DependencyResolutionResult dependencyResolutionResult =
+                    projectDependenciesResolver.resolve( dependencyResolutionRequest );
 
                 if ( checkPlugins )
                 {
@@ -230,8 +225,8 @@ public class MavenUpdateChecker
                 }
 
             }
-            SnapshotTransfertListener snapshotTransfertListener = (SnapshotTransfertListener) projectBuildingRequest
-                .getRepositorySession().getTransferListener();
+            SnapshotTransfertListener snapshotTransfertListener =
+                (SnapshotTransfertListener) projectBuildingRequest.getRepositorySession().getTransferListener();
 
             if ( snapshotTransfertListener.isSnapshotDownloaded() )
             {
@@ -281,8 +276,8 @@ public class MavenUpdateChecker
         throws MalformedURLException, IOException, InterruptedException
     {
         PluginFirstClassLoader pluginFirstClassLoader = new PluginFirstClassLoader();
-        pluginFirstClassLoader.setParent( this.masterRun ? this.classLoaderParent : Thread.currentThread()
-            .getContextClassLoader() );
+        pluginFirstClassLoader.setParent(
+            this.masterRun ? this.classLoaderParent : Thread.currentThread().getContextClassLoader() );
         // parent first as hudson classes must be loaded first in a remote env
         pluginFirstClassLoader.setParentFirst( !this.masterRun );
         pluginFirstClassLoader.addPathFiles( new ArrayList<File>( 0 ) );
@@ -300,8 +295,9 @@ public class MavenUpdateChecker
 
         request.setLoggingLevel( MavenExecutionRequest.LOGGING_LEVEL_DEBUG );
 
-        request.setWorkspaceReader( new ReactorReader( new HashMap<String,MavenProject>(0) ));//, new File( projectWorkspace ) ) );
-        
+        request.setWorkspaceReader(
+            new ReactorReader( new HashMap<String, MavenProject>( 0 ) ) );//, new File( projectWorkspace ) ) );
+
         SettingsBuilder settingsBuilder = plexusContainer.lookup( SettingsBuilder.class );
 
         RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );
@@ -311,7 +307,7 @@ public class MavenUpdateChecker
 
         SettingsBuildingRequest settingsRequest = new DefaultSettingsBuildingRequest();
 
-        if (globalSettings != null)
+        if ( globalSettings != null )
         {
             mavenUpdateCheckerResult.addDebugLine( "globalSettings " + globalSettings.getRemote() );
             settingsRequest.setGlobalSettingsFile( new File( globalSettings.getRemote() ) );
@@ -319,20 +315,21 @@ public class MavenUpdateChecker
         else
         {
             File globalSettings = new File( mavenHome, "conf/settings.xml" );
-            if (globalSettings.exists()) {
+            if ( globalSettings.exists() )
+            {
                 settingsRequest.setGlobalSettingsFile( globalSettings );
             }
         }
-        if (alternateSettings != null)
+        if ( alternateSettings != null )
         {
             mavenUpdateCheckerResult.addDebugLine( "alternateSettings " + alternateSettings.getRemote() );
-            settingsRequest.setUserSettingsFile( new File(alternateSettings.getRemote()) );
-            request.setUserSettingsFile( new File(alternateSettings.getRemote()) );
+            settingsRequest.setUserSettingsFile( new File( alternateSettings.getRemote() ) );
+            request.setUserSettingsFile( new File( alternateSettings.getRemote() ) );
         }
         else
         {
-            File defaultUserSettings = new File( new File( System.getProperty( "user.home" ), ".m2" ), "settings.xml" ) ;
-            settingsRequest.setUserSettingsFile(defaultUserSettings );
+            File defaultUserSettings = new File( new File( System.getProperty( "user.home" ), ".m2" ), "settings.xml" );
+            settingsRequest.setUserSettingsFile( defaultUserSettings );
             request.setUserSettingsFile( defaultUserSettings );
         }
         settingsRequest.setSystemProperties( System.getProperties() );
@@ -340,8 +337,8 @@ public class MavenUpdateChecker
 
         SettingsBuildingResult settingsBuildingResult = settingsBuilder.build( settingsRequest );
 
-        MavenExecutionRequestPopulator executionRequestPopulator = plexusContainer
-            .lookup( MavenExecutionRequestPopulator.class );
+        MavenExecutionRequestPopulator executionRequestPopulator =
+            plexusContainer.lookup( MavenExecutionRequestPopulator.class );
 
         executionRequestPopulator.populateFromSettings( request, settingsBuildingResult.getEffectiveSettings() );
 
@@ -355,26 +352,33 @@ public class MavenUpdateChecker
         session.setTransferListener( snapshotTransfertListener );
 
         LocalRepository localRepo = null;
-        if (StringUtils.isEmpty( localRepoPath )){
-           localRepo = new LocalRepository( settingsBuildingResult.getEffectiveSettings().getLocalRepository() );
-        } else {
-           localRepo = new LocalRepository( localRepoPath );
+        if ( StringUtils.isEmpty( localRepoPath ) )
+        {
+            localRepo = new LocalRepository( settingsBuildingResult.getEffectiveSettings().getLocalRepository() );
+        }
+        else
+        {
+            localRepo = new LocalRepository( localRepoPath );
         }
 
         session.setLocalRepositoryManager( repoSystem.newLocalRepositoryManager( localRepo ) );
 
         ArtifactRepository localArtifactRepository = null;
-        if (StringUtils.isEmpty( localRepoPath )){
-            localArtifactRepository = repositorySystem.createLocalRepository( new File( settingsBuildingResult.getEffectiveSettings().getLocalRepository() ) );
-        } else {
+        if ( StringUtils.isEmpty( localRepoPath ) )
+        {
+            localArtifactRepository = repositorySystem.createLocalRepository(
+                new File( settingsBuildingResult.getEffectiveSettings().getLocalRepository() ) );
+        }
+        else
+        {
             localArtifactRepository = repositorySystem.createLocalRepository( new File( localRepoPath ) );
         }
 
         request.setLocalRepository( localArtifactRepository );
 
-        if (this.activeProfiles != null && !this.activeProfiles.isEmpty())
+        if ( this.activeProfiles != null && !this.activeProfiles.isEmpty() )
         {
-            for (String id : this.activeProfiles)
+            for ( String id : this.activeProfiles )
             {
                 Profile p = new Profile();
                 p.setId( id );

@@ -355,15 +355,15 @@
 
   <repositories>
     <repository>
-      <id>m.g.o-public</id>
-      <url>http://maven.jenkins-ci.org:8081/content/groups/artifacts/</url>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
 
   <pluginRepositories>
     <pluginRepository>
-      <id>m.g.o-public</id>
-      <url>http://maven.jenkins-ci.org:8081/content/groups/artifacts/</url>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
   

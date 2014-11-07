@@ -21,9 +21,9 @@ package org.jvnet.hudson.plugins.mavendepsupdate.util;
 
 import org.apache.commons.lang.StringUtils;
 import org.jvnet.hudson.plugins.mavendepsupdate.MavenDependencyUpdateTrigger;
-import org.sonatype.aether.transfer.TransferCancelledException;
-import org.sonatype.aether.transfer.TransferEvent;
-import org.sonatype.aether.transfer.TransferListener;
+import org.eclipse.aether.transfer.TransferCancelledException;
+import org.eclipse.aether.transfer.TransferEvent;
+import org.eclipse.aether.transfer.TransferListener;
 
 import java.io.File;
 import java.io.Serializable;

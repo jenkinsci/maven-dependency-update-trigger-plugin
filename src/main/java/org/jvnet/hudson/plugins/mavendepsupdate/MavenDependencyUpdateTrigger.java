@@ -42,6 +42,7 @@ import hudson.tasks.Maven;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.SystemUtils;
@@ -629,8 +630,9 @@ public class MavenDependencyUpdateTrigger
                     return ( (Maven) b ).getMaven();
                 }
             }
+            Maven.DescriptorImpl descriptorByType = Jenkins.getInstance().getDescriptorByType(Maven.DescriptorImpl.class);
             // null so return first found
-            for ( Maven.MavenInstallation i : MavenModuleSet.DESCRIPTOR.getMavenDescriptor().getInstallations() )
+            for ( Maven.MavenInstallation i : descriptorByType.getInstallations() )
             {
                 return i;
             }

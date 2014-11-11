@@ -44,7 +44,6 @@ import org.apache.maven.project.ProjectBuildingResult;
 import org.apache.maven.project.ProjectDependenciesResolver;
 import org.apache.maven.project.ProjectSorter;
 import org.apache.maven.repository.RepositorySystem;
-import org.apache.maven.repository.internal.MavenRepositorySystemSession;
 import org.apache.maven.settings.building.DefaultSettingsBuildingRequest;
 import org.apache.maven.settings.building.SettingsBuilder;
 import org.apache.maven.settings.building.SettingsBuildingException;
@@ -57,12 +56,14 @@ import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.Maven3Utils;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.ReactorReader;
 import org.jvnet.hudson.plugins.mavendepsupdate.util.SnapshotTransfertListener;
-import org.sonatype.aether.repository.LocalRepository;
-import org.sonatype.aether.repository.RepositoryPolicy;
-import org.sonatype.aether.repository.WorkspaceReader;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.repository.WorkspaceReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -197,8 +198,8 @@ public class MavenUpdateChecker
             final Map<String, MavenProject> projectMap = getProjectMap( mavenProjects );
             WorkspaceReader reactorRepository = new ReactorReader( projectMap );
 
-            MavenRepositorySystemSession mavenRepositorySystemSession =
-                (MavenRepositorySystemSession) projectBuildingRequest.getRepositorySession();
+            DefaultRepositorySystemSession mavenRepositorySystemSession =
+                    (DefaultRepositorySystemSession) projectBuildingRequest.getRepositorySession();
 
             mavenRepositorySystemSession.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
 
@@ -314,8 +315,8 @@ public class MavenUpdateChecker
 
         RepositorySystem repositorySystem = plexusContainer.lookup( RepositorySystem.class );
 
-        org.sonatype.aether.RepositorySystem repoSystem =
-            plexusContainer.lookup( org.sonatype.aether.RepositorySystem.class );
+        org.eclipse.aether.RepositorySystem repoSystem =
+            plexusContainer.lookup( org.eclipse.aether.RepositorySystem.class );
 
         SettingsBuildingRequest settingsRequest = new DefaultSettingsBuildingRequest();
 
@@ -356,7 +357,7 @@ public class MavenUpdateChecker
 
         executionRequestPopulator.populateDefaults( request );
 
-        MavenRepositorySystemSession session = new MavenRepositorySystemSession();
+        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession();
 
         session.setUpdatePolicy( RepositoryPolicy.UPDATE_POLICY_ALWAYS );
 
@@ -373,7 +374,7 @@ public class MavenUpdateChecker
             localRepo = new LocalRepository( localRepoPath );
         }
 
-        session.setLocalRepositoryManager( repoSystem.newLocalRepositoryManager( localRepo ) );
+        session.setLocalRepositoryManager( repoSystem.newLocalRepositoryManager(session, localRepo ) );
 
         ArtifactRepository localArtifactRepository = null;
         if ( StringUtils.isEmpty( localRepoPath ) )

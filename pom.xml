@@ -3,7 +3,7 @@
     <parent>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>plugin</artifactId>
-      <version>1.424.1</version>
+      <version>1.554.1</version>
     </parent>
 
   <artifactId>maven-dependency-update-trigger</artifactId>
@@ -14,9 +14,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <mavenVersion>3.0.3</mavenVersion>
+    <mavenVersion>3.1.0</mavenVersion>
     <wagonVersion>2.2</wagonVersion>
-    <aetherVersion>1.13.1</aetherVersion>
+    <aetherVersion>0.9.0.M2</aetherVersion>
     <sisuInjectVersion>2.3.0</sisuInjectVersion>
   </properties>
   
@@ -109,28 +109,28 @@
       <version>2.5</version>
     </dependency>    
     <dependency>
-      <groupId>org.sonatype.aether</groupId>
+      <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-api</artifactId>
       <version>${aetherVersion}</version>
       <scope>provided</scope>
     </dependency>  
     
     <dependency>
-      <groupId>org.sonatype.aether</groupId>
+      <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-impl</artifactId>
       <version>${aetherVersion}</version>
       <scope>provided</scope>
     </dependency>
     
     <dependency>
-      <groupId>org.sonatype.aether</groupId>
+      <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-spi</artifactId>
       <version>${aetherVersion}</version>
       <scope>provided</scope>
     </dependency>    
     
     <dependency>
-      <groupId>org.sonatype.aether</groupId>
+      <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-connector-wagon</artifactId>
       <version>${aetherVersion}</version>
       <scope>provided</scope>
@@ -143,7 +143,7 @@
     </dependency>    
     
     <dependency>
-      <groupId>org.sonatype.aether</groupId>
+      <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-util</artifactId>
       <version>${aetherVersion}</version>
       <scope>provided</scope>
@@ -237,6 +237,7 @@
     <dependency>
       <groupId>org.jenkins-ci.main</groupId>
       <artifactId>maven-plugin</artifactId>
+      <version>2.0</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>

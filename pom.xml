@@ -18,6 +18,7 @@
     <wagonVersion>2.2</wagonVersion>
     <aetherVersion>0.9.0.M2</aetherVersion>
     <sisuInjectVersion>2.3.0</sisuInjectVersion>
+    <maven-release-plugin.version>2.5.1</maven-release-plugin.version>
   </properties>
   
   <scm>
@@ -350,8 +351,8 @@
             </goals>
           </execution>
         </executions>
-      </plugin>      
-    </plugins>    
+      </plugin>
+    </plugins>
   </build>
 
   <repositories>

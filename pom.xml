@@ -7,7 +7,7 @@
     </parent>
 
   <artifactId>maven-dependency-update-trigger</artifactId>
-  <version>1.5</version>
+  <version>1.6-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Maven+Dependency+Update+trigger</url>
   <name>Maven Dependency Update Trigger</name>
@@ -25,7 +25,7 @@
     <connection>scm:git:git://github.com/jenkinsci/maven-dependency-update-trigger-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/maven-dependency-update-trigger-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/maven-dependency-update-trigger-plugin</url>
-    <tag>maven-dependency-update-trigger-1.5</tag>
+    <tag>HEAD</tag>
   </scm>  
   
   <developers>
